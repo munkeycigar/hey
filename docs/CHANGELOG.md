@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026-06-05 — Add fullscreen QR page
+- Add an owner-protected fullscreen QR page for presenting a card name and large QR code.
+
 ## 2026-06-05 — Document localhost deployment
 - Document how maintainers deploy Hey on `127.0.0.1:9600` behind an existing Cloudflare Tunnel.
 

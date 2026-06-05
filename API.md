@@ -5,28 +5,62 @@ _API surface contract for this project. Both human developers and AI agents shou
 > Companion to [`ARCHITECTURE.md`](./ARCHITECTURE.md), which covers the broader system map.
 
 ## Overview
-<!-- One paragraph: what this API does, who consumes it, base URL, and transport (REST, GraphQL, RPC). -->
+
+Hey is a server-rendered Django app for virtual business cards. The app exposes authenticated HTML pages for card management plus download endpoints for card vCards and QR PNGs.
 
 ## Authentication
-<!-- How callers authenticate: bearer tokens, API keys, OAuth, sessions. Where credentials are issued, scoped, and rotated. -->
+
+Hey uses Django session authentication. Card routes require a logged-in user unless noted otherwise. Card-specific routes are owner-isolated: authenticated users receive HTTP 404 when they request another user's card.
 
 ## Endpoints
-<!-- Group by resource. For each: method, path, purpose, required auth/scopes. Link to schemas below. -->
+
+### Accounts
+
+| Method | Path | Purpose | Auth |
+|--------|------|---------|------|
+| GET/POST | `/accounts/register/` | Register a new user and log them in. | Anonymous |
+| GET/POST | `/accounts/login/` | Start a user session. | Anonymous |
+| POST | `/accounts/logout/` | End the current user session. | Authenticated |
+
+### Cards
+
+| Method | Path | Purpose | Auth |
+|--------|------|---------|------|
+| GET | `/` | List the current user's cards. | Authenticated |
+| GET/POST | `/cards/new/` | Create a card owned by the current user. | Authenticated |
+| GET | `/cards/<id>/` | Show one owned card. | Authenticated owner |
+| GET/POST | `/cards/<id>/edit/` | Edit one owned card. | Authenticated owner |
+| GET/POST | `/cards/<id>/delete/` | Delete one owned card. | Authenticated owner |
+| GET | `/cards/<id>/qr/fullscreen/` | Show a full-viewport HTML QR presentation page with the card name. | Authenticated owner |
+| GET | `/cards/<id>/qr.png` | Return a PNG QR code containing the card's vCard data. | Authenticated owner |
+| GET | `/cards/<id>/vcard.vcf` | Return the card as a downloadable vCard file. | Authenticated owner |
 
 ## Request / Response Shapes
-<!-- Canonical request and response payloads. Reference shared types where possible; document required vs optional fields. -->
+
+HTML routes return Django-rendered HTML. `/cards/<id>/qr/fullscreen/` returns an HTML page containing the card display name and an image that references `/cards/<id>/qr.png`. `/cards/<id>/qr.png` returns `image/png` with `Cache-Control: no-store`. `/cards/<id>/vcard.vcf` returns `text/vcard; charset=utf-8` with an attachment filename derived from the card display name.
 
 ## Error Model
-<!-- Standard error envelope, status-code conventions, retryable vs terminal errors, common error codes. -->
+
+Unauthenticated users are redirected to `/accounts/login/` for class-based card pages, including `/cards/<id>/qr/fullscreen/`. Card download helper endpoints return HTTP 404 for unauthenticated requests and for requests to cards the user does not own. Authenticated users receive HTTP 404 for other users' cards.
 
 ## Webhooks / Events
-<!-- Outbound events and webhook contracts. Signing, retries, ordering. Leave blank if not applicable. -->
+
+Hey does not emit webhooks or outbound events.
 
 ## Rate Limits
-<!-- Limits per token / per IP, quota windows, headers exposed to callers, throttling behavior. -->
+
+No application-level rate limits are configured.
 
 ## Versioning
-<!-- Version strategy (URL path, header, none). Deprecation policy. Rules for breaking changes. -->
+
+The app does not expose a versioned public API. Endpoint changes are tracked in this file and in `docs/CHANGELOG.md`.
 
 ## Examples
-<!-- End-to-end request/response examples for the most-used endpoints. -->
+
+```http
+GET /cards/12/qr/fullscreen/ HTTP/1.1
+Host: hey.leorey.es
+Cookie: sessionid=...
+```
+
+Successful response: HTTP 200 with an HTML page containing the card display name and an `<img>` that references `/cards/12/qr.png`.

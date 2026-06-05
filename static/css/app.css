@@ -210,8 +210,104 @@ pre.vcard{
   white-space:pre-wrap;overflow-wrap:anywhere;
 }
 
+/* ---- fullscreen QR ---- */
+body.qr-fullscreen-body{
+  min-height:100vh;
+  background:var(--paper);
+}
+body.qr-fullscreen-body::after{
+  background:
+    radial-gradient(900px 600px at 15% 0%, rgba(189,75,44,0.08), transparent 60%),
+    radial-gradient(800px 700px at 100% 100%, rgba(30,90,78,0.06), transparent 60%);
+}
+.qr-fullscreen{
+  position:relative;
+  z-index:2;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:96px clamp(18px,5vw,40px) 56px;
+}
+.qr-fullscreen__actions{
+  position:fixed;
+  top:24px;
+  left:clamp(18px,5vw,40px);
+  right:clamp(18px,5vw,40px);
+  z-index:4;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  pointer-events:none;
+}
+.qr-fullscreen__actions .btn{
+  pointer-events:auto;
+}
+.qr-fullscreen__content{
+  width:min(92vw,760px);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+}
+.qr-fullscreen__content .kicker{
+  margin-bottom:18px;
+}
+.qr-fullscreen__content .kicker::before{
+  display:none;
+}
+.qr-fullscreen__content h1{
+  max-width:14ch;
+  font-size:4.5rem;
+  overflow-wrap:anywhere;
+}
+.qr-fullscreen__role{
+  margin-top:18px;
+  font-family:'Space Mono',monospace;
+  font-size:13px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--accent);
+  overflow-wrap:anywhere;
+}
+.qr-fullscreen__tile{
+  width:min(76vmin,560px);
+  aspect-ratio:1;
+  margin-top:34px;
+  padding:clamp(12px,2vw,22px);
+  background:#fff;
+  border-radius:12px;
+  box-shadow:0 24px 60px -34px var(--shadow), inset 0 0 0 1px var(--line-soft);
+  line-height:0;
+}
+.qr-fullscreen__tile img{
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:contain;
+}
+
 @media (max-width:760px){
   .form-grid{grid-template-columns:1fr;}
   .preview-card{flex-direction:column;align-items:flex-start;}
   .pc-qr{align-self:center;}
+  .qr-fullscreen{
+    justify-content:flex-start;
+    padding-top:112px;
+  }
+  .qr-fullscreen__actions{
+    position:absolute;
+    top:18px;
+    left:18px;
+    right:18px;
+  }
+  .qr-fullscreen__content h1{
+    font-size:2.6rem;
+  }
+  .qr-fullscreen__tile{
+    width:min(84vmin,420px);
+    margin-top:26px;
+  }
 }

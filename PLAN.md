@@ -81,3 +81,40 @@ Document how maintainers deploy Hey locally on `127.0.0.1:9600` for an external 
 - Changing Docker Compose behavior or application runtime code.
 - Configuring Cloudflare Tunnel, DNS, TLS, or host-level services.
 - Changing API endpoints, payloads, auth, errors, or webhooks.
+
+---
+
+# Plan — Add Fullscreen QR Route And Page
+
+## Goal
+Add an authenticated owner-protected full-viewport QR page for business cards.
+
+## Checklist
+- [x] Add failing tests for the fullscreen QR route login, owner rendering, and owner isolation behavior.
+- [x] Verify the new fullscreen QR route tests fail before production code changes.
+- [x] Add the owner-protected fullscreen QR view and trailing-slash URL route.
+- [x] Create the standalone fullscreen QR template.
+- [x] Add focused fullscreen QR CSS with responsive mobile rules.
+- [x] Update human-facing docs and API route documentation for the fullscreen QR page.
+- [x] Run targeted fullscreen QR tests and the cards test suite.
+- [x] Run route resolution and whitespace verification.
+- [x] Append handoff notes and attempt to commit the implementation.
+
+## Verification Notes
+- Red test run: the three new fullscreen QR tests failed with `NoReverseMatch` for `cards:qr_fullscreen` before production code was added.
+- Green targeted run: the three fullscreen QR tests passed under a constrained Django harness using SQLite plus import shims for unavailable offline packages.
+- Green suite run: `cards` and full Django discovery each passed 10 tests under the same constrained harness.
+- Route resolution printed `/cards/1/qr/fullscreen/`.
+- `python3 -m compileall accounts cards config manage.py` passed.
+- `git diff --check` passed.
+- Unshimmed `.venv/bin/python manage.py test ...` is blocked because the local virtualenv lacks Django, and `pip install -r requirements.txt` is blocked by sandbox network/DNS restrictions.
+- `git add ... && git commit -m "feat: add fullscreen QR page"` is blocked because the sandbox cannot create `.git/index.lock` (`Operation not permitted`).
+
+## Integration Check
+- Existing QR displays and downloads continue to use `cards:qr`.
+- The card detail page entry point is a planned Task 2 follow-up and remains out of scope for this Task 1 implementation.
+
+## Out of Scope
+- Adding the card detail page entry point to fullscreen QR.
+- Changing QR PNG generation or vCard serialization.
+- Changing account authentication behavior.

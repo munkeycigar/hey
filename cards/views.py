@@ -36,6 +36,11 @@ class CardDetailView(OwnedCardsMixin, DetailView):
     context_object_name = "card"
 
 
+class CardQRFullscreenView(OwnedCardsMixin, DetailView):
+    template_name = "cards/card_qr_fullscreen.html"
+    context_object_name = "card"
+
+
 class CardCreateView(LoginRequiredMixin, CreateView):
     model = BusinessCard
     form_class = BusinessCardForm

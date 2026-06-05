@@ -65,6 +65,54 @@ class CardFlowTests(TestCase):
         self.assertIn("FN:Ada Lovelace", body)
         self.assertIn("EMAIL;TYPE=INTERNET:ada@example.com", body)
 
+    def test_qr_fullscreen_page_requires_login(self):
+        card = BusinessCard.objects.create(
+            owner=self.user,
+            first_name="Ada",
+            last_name="Lovelace",
+        )
+        url = reverse("cards:qr_fullscreen", args=[card.pk])
+
+        resp = self.client.get(url)
+
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn(reverse("accounts:login"), resp.url)
+        self.assertIn(url, resp.url)
+
+    def test_qr_fullscreen_page_renders_owner_card(self):
+        self.client.force_login(self.user)
+        card = BusinessCard.objects.create(
+            owner=self.user,
+            first_name="Ada",
+            last_name="Lovelace",
+            organization="Analytical Engines",
+            title="Founder",
+        )
+
+        resp = self.client.get(reverse("cards:qr_fullscreen", args=[card.pk]))
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, "cards/card_qr_fullscreen.html")
+        self.assertContains(resp, "Ada Lovelace")
+        self.assertContains(resp, "Founder · Analytical Engines")
+        self.assertContains(resp, reverse("cards:qr", args=[card.pk]))
+        self.assertContains(resp, reverse("cards:detail", args=[card.pk]))
+        self.assertContains(resp, "Download QR")
+        self.assertContains(resp, "qr-fullscreen__tile")
+
+    def test_qr_fullscreen_page_hides_other_users_card(self):
+        other = User.objects.create_user("charles", password=PW)
+        card = BusinessCard.objects.create(
+            owner=other,
+            first_name="Charles",
+            last_name="Babbage",
+        )
+        self.client.force_login(self.user)
+
+        resp = self.client.get(reverse("cards:qr_fullscreen", args=[card.pk]))
+
+        self.assertEqual(resp.status_code, 404)
+
     def test_owner_isolation(self):
         other = User.objects.create_user("charles", password=PW)
         card = BusinessCard.objects.create(owner=other, first_name="Charles", last_name="Babbage")
