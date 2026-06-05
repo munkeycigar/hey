@@ -1,0 +1,42 @@
+{% extends "cards/base.html" %}
+{% block title %}My cards · hey{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="kicker">{{ cards|length }} card{{ cards|length|pluralize }}</span>
+    <h1>Your contact <em>cards</em></h1>
+  </div>
+  <a class="btn btn--accent" href="{% url 'cards:create' %}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+    New card
+  </a>
+</div>
+
+{% if cards %}
+  <div class="card-grid">
+    {% for card in cards %}
+      <a class="mini-card" href="{{ card.get_absolute_url }}">
+        {% if card.label %}<span class="label-chip">{{ card.label }}</span>{% endif %}
+        <div class="mini-top">
+          <div>
+            <div class="mini-name">{{ card.display_name|default:"Untitled" }}</div>
+            {% if card.role_line %}<div class="mini-role">{{ card.role_line }}</div>{% endif %}
+          </div>
+          <div class="mini-qr"><img src="{% url 'cards:qr' card.pk %}" alt="QR code for {{ card.display_name }}"></div>
+        </div>
+        <div class="mini-lines">
+          {% if card.phone %}<span>{{ card.phone }}</span>{% endif %}
+          {% if card.email %}<span>{{ card.email }}</span>{% endif %}
+        </div>
+        <div class="mini-meta">Updated {{ card.updated_at|date:"M j, Y" }}</div>
+      </a>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty">
+    <span class="kicker" style="justify-content:center;">Nothing here yet</span>
+    <p>You haven't saved any contact cards. Create your first one and you'll get a scannable QR code to share.</p>
+    <a class="btn btn--accent" href="{% url 'cards:create' %}">Create your first card</a>
+  </div>
+{% endif %}
+{% endblock %}

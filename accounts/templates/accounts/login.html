@@ -1,0 +1,32 @@
+{% extends "cards/base.html" %}
+{% block title %}Log in · hey{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth">
+    <span class="kicker">Welcome back</span>
+    <h1>Log <em>in</em></h1>
+
+    {% if form.non_field_errors %}
+      <ul class="nonfield">{% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}</ul>
+    {% endif %}
+
+    <form method="post" action="{% url 'accounts:login' %}">
+      {% csrf_token %}
+      <div class="field">
+        <label for="{{ form.username.id_for_label }}">Username</label>
+        {{ form.username }}
+        {% if form.username.errors %}<ul class="errorlist">{% for e in form.username.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+      <div class="field">
+        <label for="{{ form.password.id_for_label }}">Password</label>
+        {{ form.password }}
+        {% if form.password.errors %}<ul class="errorlist">{% for e in form.password.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+      <button class="btn" type="submit">Log in</button>
+    </form>
+
+    <p class="auth-alt">No account yet? <a href="{% url 'accounts:register' %}">Create one</a></p>
+  </div>
+</div>
+{% endblock %}

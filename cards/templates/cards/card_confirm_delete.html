@@ -1,0 +1,18 @@
+{% extends "cards/base.html" %}
+{% block title %}Delete card · hey{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth">
+    <span class="kicker">Heads up</span>
+    <h1>Delete this <em>card?</em></h1>
+    <p class="sub">You're about to permanently delete <strong>{{ card.full_label }}</strong>. This can't be undone.</p>
+    <form method="post" style="margin-top:26px;">
+      {% csrf_token %}
+      <div class="btn-row">
+        <button class="btn btn--danger" type="submit">Delete card</button>
+        <a class="btn btn--ghost" href="{{ card.get_absolute_url }}">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

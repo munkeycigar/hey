@@ -1,0 +1,52 @@
+{% extends "cards/base.html" %}
+{% block title %}{{ card.full_label }} · hey{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="kicker">Contact card</span>
+    <h1>{{ card.display_name|default:card.full_label }}</h1>
+  </div>
+  <div class="btn-row">
+    <a class="btn btn--ghost btn--sm" href="{% url 'cards:edit' card.pk %}">Edit</a>
+    <a class="btn btn--ghost btn--sm" href="{% url 'cards:delete' card.pk %}">Delete</a>
+  </div>
+</div>
+
+<div class="detail-grid">
+  <div class="preview-card">
+    <div class="pc-info">
+      {% if card.label %}<span class="label-chip" style="display:inline-block;margin-bottom:12px;">{{ card.label }}</span>{% endif %}
+      <div class="pc-name">{{ card.display_name|default:"Untitled" }}</div>
+      {% if card.role_line %}<div class="pc-role">{{ card.role_line }}</div>{% endif %}
+      <ul class="pc-lines">
+        {% if card.phone %}<li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          <span>{{ card.phone }}</span></li>{% endif %}
+        {% if card.email %}<li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
+          <span>{{ card.email }}</span></li>{% endif %}
+        {% if card.website %}<li>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          <span>{{ card.website }}</span></li>{% endif %}
+      </ul>
+    </div>
+    <div class="pc-qr">
+      <div class="qr-tile"><img src="{% url 'cards:qr' card.pk %}" alt="QR code for {{ card.display_name }}"></div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <a class="btn" href="{% url 'cards:vcf' card.pk %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+      Download .vcf
+    </a>
+    <a class="btn btn--ghost" href="{% url 'cards:qr' card.pk %}" download="{{ card.display_name|default:'contact' }}-qr.png">Download QR (PNG)</a>
+    <span class="hint">Scan with a phone camera to add the contact</span>
+  </div>
+
+  <details class="raw">
+    <summary>View vCard data</summary>
+    <pre class="vcard">{{ card.to_vcard }}</pre>
+  </details>
+</div>
+{% endblock %}

@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact Card QR Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Hanken+Grotesk:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root{
+    --paper:#F3EFE6;
+    --card:#FBF9F3;
+    --ink:#211C16;
+    --ink-2:#5C5447;
+    --ink-3:#8C8475;
+    --accent:#BD4B2C;
+    --line:rgba(33,28,22,0.14);
+    --line-soft:rgba(33,28,22,0.08);
+    --shadow:rgba(33,28,22,0.12);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    font-family:'Hanken Grotesk',sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    line-height:1.5;
+    min-height:100vh;
+    position:relative;
+    overflow-x:hidden;
+    padding:clamp(24px,5vw,64px) clamp(18px,5vw,48px) 64px;
+  }
+  /* warm depth */
+  body::after{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(900px 600px at 12% -10%, rgba(189,75,44,0.10), transparent 60%),
+      radial-gradient(800px 700px at 105% 115%, rgba(30,90,78,0.07), transparent 60%);
+  }
+  /* paper grain */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.38;mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E");
+  }
+  .wrap{position:relative;z-index:2;max-width:1000px;margin:0 auto;}
+
+  /* masthead */
+  .masthead{max-width:680px;margin-bottom:clamp(28px,4vw,44px);opacity:0;transform:translateY(14px);animation:rise .7s .05s cubic-bezier(.2,.7,.2,1) forwards;}
+  .kicker{
+    font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.32em;text-transform:uppercase;
+    color:var(--accent);display:inline-flex;align-items:center;gap:.7em;margin-bottom:18px;
+  }
+  .kicker::before{content:"";width:30px;height:1px;background:var(--accent);display:inline-block;}
+  h1{
+    font-family:'Fraunces',serif;font-weight:400;font-size:clamp(38px,7vw,68px);
+    line-height:.98;letter-spacing:-.015em;color:var(--ink);
+  }
+  h1 em{font-style:italic;font-weight:500;color:var(--accent);}
+  .sub{margin-top:18px;font-size:clamp(15px,1.6vw,17px);color:var(--ink-2);max-width:46ch;}
+
+  /* layout */
+  .grid{
+    display:grid;grid-template-columns:0.92fr 1.08fr;gap:clamp(24px,4vw,52px);align-items:start;
+  }
+  .panel{opacity:0;transform:translateY(16px);animation:rise .7s cubic-bezier(.2,.7,.2,1) forwards;}
+  .form{animation-delay:.14s;}
+  .preview{animation-delay:.22s;}
+
+  /* form */
+  .form-head{
+    font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.26em;text-transform:uppercase;
+    color:var(--ink-3);padding-bottom:14px;margin-bottom:26px;border-bottom:1px solid var(--line);
+  }
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  .field{display:block;margin-bottom:24px;}
+  .field-label{
+    display:block;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--ink-2);margin-bottom:9px;transition:color .2s;
+  }
+  .field input{
+    width:100%;border:none;border-bottom:1.5px solid var(--line);background:transparent;
+    font-family:'Hanken Grotesk',sans-serif;font-size:17px;color:var(--ink);
+    padding:6px 2px 9px;transition:border-color .2s;
+  }
+  .field input::placeholder{color:var(--ink-3);opacity:.65;}
+  .field input:focus{outline:none;border-bottom-color:var(--accent);}
+  .field:focus-within .field-label{color:var(--accent);}
+
+  /* preview card */
+  .card{
+    position:relative;background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:32px 30px;box-shadow:0 22px 48px -28px var(--shadow),0 2px 0 var(--line-soft);
+    display:flex;gap:26px;align-items:center;
+  }
+  .card::before{content:"";position:absolute;top:0;left:24px;right:24px;height:3px;background:var(--accent);border-radius:0 0 3px 3px;}
+  .card-info{flex:1;min-width:0;}
+  .tag{
+    font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--ink-3);border:1px solid var(--line);border-radius:20px;padding:3px 10px;display:none;
+    margin-bottom:14px;
+  }
+  .is-demo .tag{display:inline-block;}
+  .card-name{
+    font-family:'Fraunces',serif;font-weight:500;font-size:clamp(26px,3.4vw,33px);line-height:1.04;
+    letter-spacing:-.01em;color:var(--ink);overflow-wrap:anywhere;
+  }
+  .card-role{
+    font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.04em;color:var(--accent);
+    margin-top:8px;text-transform:uppercase;overflow-wrap:anywhere;min-height:1em;
+  }
+  .card-lines{list-style:none;margin-top:20px;display:flex;flex-direction:column;gap:11px;}
+  .card-lines li{display:flex;align-items:center;gap:11px;font-size:14.5px;color:var(--ink-2);overflow-wrap:anywhere;}
+  .card-lines li[hidden]{display:none;}
+  .card-lines svg{flex:none;width:15px;height:15px;color:var(--ink-3);}
+
+  .card-qr{flex:none;}
+  .qr-tile{
+    background:#fff;border-radius:10px;padding:12px;box-shadow:0 1px 0 var(--line),inset 0 0 0 1px var(--line-soft);
+    line-height:0;
+  }
+  #qr{width:188px;height:188px;display:flex;align-items:center;justify-content:center;}
+  #qr canvas,#qr img{width:188px !important;height:188px !important;border:0;}
+  .qr-empty{
+    width:188px;height:188px;border:1.5px dashed var(--line);border-radius:8px;display:flex;
+    align-items:center;justify-content:center;text-align:center;
+    font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.08em;color:var(--ink-3);padding:16px;
+  }
+  .is-demo .qr-tile{opacity:.62;}
+
+  /* actions */
+  .actions{margin-top:24px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;}
+  .btn{
+    font-family:'Hanken Grotesk',sans-serif;font-weight:600;font-size:15px;letter-spacing:.01em;
+    border:none;border-radius:8px;padding:13px 22px;cursor:pointer;display:inline-flex;align-items:center;gap:9px;
+    background:var(--ink);color:var(--paper);transition:transform .15s ease,box-shadow .2s ease,opacity .2s;
+    box-shadow:0 10px 22px -12px var(--shadow);
+  }
+  .btn:hover{transform:translateY(-2px);box-shadow:0 16px 28px -14px var(--shadow);}
+  .btn:active{transform:translateY(0);}
+  .btn svg{width:16px;height:16px;}
+  .hint{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.05em;color:var(--ink-3);}
+
+  details.vcard-raw{margin-top:26px;border-top:1px solid var(--line);padding-top:18px;}
+  details.vcard-raw summary{
+    font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--ink-2);cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:8px;user-select:none;
+  }
+  details.vcard-raw summary::-webkit-details-marker{display:none;}
+  details.vcard-raw summary::before{content:"+";color:var(--accent);font-size:14px;}
+  details.vcard-raw[open] summary::before{content:"–";}
+  pre#vcardText{
+    margin-top:14px;font-family:'Space Mono',monospace;font-size:12px;line-height:1.7;color:var(--ink-2);
+    background:rgba(33,28,22,0.035);border:1px solid var(--line-soft);border-radius:8px;
+    padding:16px 18px;white-space:pre-wrap;overflow-wrap:anywhere;
+  }
+
+  .foot{
+    margin-top:clamp(36px,5vw,56px);font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.06em;
+    color:var(--ink-3);max-width:62ch;line-height:1.8;
+  }
+
+  @keyframes rise{to{opacity:1;transform:translateY(0);}}
+
+  @media (max-width:760px){
+    .grid{grid-template-columns:1fr;}
+    .card{flex-direction:column;align-items:flex-start;}
+    .card-qr{align-self:center;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none !important;}
+    .masthead,.panel{opacity:1;transform:none;}
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="masthead">
+      <span class="kicker">vCard · QR</span>
+      <h1>Pocket-sized<br><em>contact card</em></h1>
+      <p class="sub">Fill in your details below. Anyone who points a phone camera at the code gets a one-tap “Add Contact” — no app required, on iPhone or Android.</p>
+    </header>
+
+    <div class="grid">
+      <section class="panel form">
+        <div class="form-head">Your details</div>
+        <div class="row">
+          <label class="field">
+            <span class="field-label">First name</span>
+            <input id="firstName" type="text" placeholder="Ada" autocomplete="given-name">
+          </label>
+          <label class="field">
+            <span class="field-label">Last name</span>
+            <input id="lastName" type="text" placeholder="Lovelace" autocomplete="family-name">
+          </label>
+        </div>
+        <label class="field">
+          <span class="field-label">Phone</span>
+          <input id="phone" type="tel" placeholder="+1 555 0100" autocomplete="tel">
+        </label>
+        <label class="field">
+          <span class="field-label">Email</span>
+          <input id="email" type="email" placeholder="you@example.com" autocomplete="email">
+        </label>
+        <div class="row">
+          <label class="field">
+            <span class="field-label">Company</span>
+            <input id="org" type="text" placeholder="Analytical Engines" autocomplete="organization">
+          </label>
+          <label class="field">
+            <span class="field-label">Job title</span>
+            <input id="title" type="text" placeholder="Founder" autocomplete="organization-title">
+          </label>
+        </div>
+        <label class="field" style="margin-bottom:0;">
+          <span class="field-label">Website</span>
+          <input id="url" type="url" placeholder="example.com" autocomplete="url">
+        </label>
+      </section>
+
+      <section class="panel preview">
+        <div class="card" id="card">
+          <div class="card-info">
+            <span class="tag">Example — start typing</span>
+            <div class="card-name" id="pvName">Your name</div>
+            <div class="card-role" id="pvRole"></div>
+            <ul class="card-lines">
+              <li id="pvPhoneLi" hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                <span id="pvPhone"></span>
+              </li>
+              <li id="pvEmailLi" hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
+                <span id="pvEmail"></span>
+              </li>
+              <li id="pvUrlLi" hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                <span id="pvUrl"></span>
+              </li>
+            </ul>
+          </div>
+          <div class="card-qr">
+            <div class="qr-tile"><div id="qr"></div></div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn" id="downloadBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+            Download QR (PNG)
+          </button>
+          <span class="hint" id="downloadHint">High-res · print-ready</span>
+        </div>
+
+        <details class="vcard-raw">
+          <summary>View vCard data</summary>
+          <pre id="vcardText"></pre>
+        </details>
+      </section>
+    </div>
+
+    <p class="foot">Tip — print it on a business card or name badge, drop it in an email signature, or stick it to a shop window. To test it, open your phone’s camera and hold it over the code.</p>
+  </div>
+
+<script>
+(function(){
+  var ids = ['firstName','lastName','phone','email','org','title','url'];
+  var el = {};
+  ids.forEach(function(k){ el[k] = document.getElementById(k); });
+
+  var SAMPLE = {
+    firstName:'Ada', lastName:'Lovelace', phone:'+1 (555) 0100',
+    email:'ada@analytical.co', org:'Analytical Engines', title:'Founder',
+    url:'analytical.co'
+  };
+
+  var qrHolder = document.getElementById('qr');
+  var card = document.getElementById('card');
+
+  function getValues(){
+    var v = {};
+    ids.forEach(function(k){ v[k] = el[k].value.trim(); });
+    return v;
+  }
+  function isEmpty(v){
+    return ids.every(function(k){ return !v[k]; });
+  }
+  function escVC(s){
+    return String(s)
+      .replace(/\\/g,'\\\\')
+      .replace(/\n/g,'\\n')
+      .replace(/,/g,'\\,')
+      .replace(/;/g,'\\;');
+  }
+  function normUrl(u){
+    if(!u) return '';
+    return /^https?:\/\//i.test(u) ? u : 'https://' + u;
+  }
+  function buildVCard(v){
+    var lines = ['BEGIN:VCARD','VERSION:3.0'];
+    lines.push('N:' + escVC(v.lastName) + ';' + escVC(v.firstName) + ';;;');
+    var fn = (v.firstName + ' ' + v.lastName).trim();
+    lines.push('FN:' + escVC(fn || v.phone || v.email || 'Contact'));
+    if(v.org)   lines.push('ORG:' + escVC(v.org));
+    if(v.title) lines.push('TITLE:' + escVC(v.title));
+    if(v.phone) lines.push('TEL;TYPE=CELL:' + escVC(v.phone));
+    if(v.email) lines.push('EMAIL;TYPE=INTERNET:' + escVC(v.email));
+    if(v.url)   lines.push('URL:' + escVC(normUrl(v.url)));
+    lines.push('END:VCARD');
+    return lines.join('\n');
+  }
+
+  function setLine(liId, spanId, value, display){
+    var li = document.getElementById(liId);
+    var span = document.getElementById(spanId);
+    if(value){ span.textContent = display || value; li.hidden = false; }
+    else { li.hidden = true; }
+  }
+
+  function drawQR(text){
+    qrHolder.innerHTML = '';
+    /* high resolution so the downloaded PNG stays crisp; scaled down via CSS */
+    new QRCode(qrHolder, {
+      text: text,
+      width: 640,
+      height: 640,
+      colorDark: '#1b1712',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  }
+
+  function render(){
+    var v = getValues();
+    var demo = isEmpty(v);
+    var data = demo ? SAMPLE : v;
+
+    card.classList.toggle('is-demo', demo);
+
+    var name = (data.firstName + ' ' + data.lastName).trim();
+    document.getElementById('pvName').textContent = name || (data.phone || data.email || 'Contact');
+
+    var role = [data.title, data.org].filter(Boolean).join(' · ');
+    document.getElementById('pvRole').textContent = role;
+
+    setLine('pvPhoneLi','pvPhone', data.phone);
+    setLine('pvEmailLi','pvEmail', data.email);
+    setLine('pvUrlLi','pvUrl', data.url, data.url ? data.url.replace(/^https?:\/\//i,'') : '');
+
+    var vcard = buildVCard(data);
+    document.getElementById('vcardText').textContent = vcard;
+    drawQR(vcard);
+  }
+
+  var raf;
+  function schedule(){
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(render);
+  }
+  ids.forEach(function(k){ el[k].addEventListener('input', schedule); });
+
+  /* download: redraw onto a padded white canvas to guarantee a scannable quiet zone */
+  document.getElementById('downloadBtn').addEventListener('click', function(){
+    var src = qrHolder.querySelector('canvas');
+    var dataUrl;
+    if(src){
+      var pad = Math.round(src.width * 0.12);
+      var out = document.createElement('canvas');
+      out.width = src.width + pad*2;
+      out.height = src.height + pad*2;
+      var ctx = out.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0,0,out.width,out.height);
+      ctx.drawImage(src, pad, pad);
+      dataUrl = out.toDataURL('image/png');
+    } else {
+      var img = qrHolder.querySelector('img');
+      if(!img) return;
+      dataUrl = img.src;
+    }
+    var v = getValues();
+    var base = (v.firstName + ' ' + v.lastName).trim() || 'contact';
+    base = base.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || 'contact';
+    var a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = base + '-qr.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+{% extends "cards/base.html" %}
+{% block title %}{% if is_create %}New card{% else %}Edit card{% endif %} · hey{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <span class="kicker">{% if is_create %}New card{% else %}Editing{% endif %}</span>
+    <h1>{% if is_create %}Make a <em>contact card</em>{% else %}Edit <em>card</em>{% endif %}</h1>
+  </div>
+  <a class="btn btn--ghost btn--sm" href="{% url 'cards:list' %}">Back to cards</a>
+</div>
+
+<form method="post" class="form-grid">
+  {% csrf_token %}
+  <section>
+    <div class="fields-head">Details</div>
+    <div class="fields">
+      <div class="field">
+        <label for="{{ form.label.id_for_label }}">Card name</label>
+        {{ form.label }}
+        <div class="help">Optional — e.g. “Work” or “Freelance”</div>
+        {% if form.label.errors %}<ul class="errorlist">{% for e in form.label.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="{{ form.first_name.id_for_label }}">First name</label>
+          {{ form.first_name }}
+          {% if form.first_name.errors %}<ul class="errorlist">{% for e in form.first_name.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        <div class="field">
+          <label for="{{ form.last_name.id_for_label }}">Last name</label>
+          {{ form.last_name }}
+          {% if form.last_name.errors %}<ul class="errorlist">{% for e in form.last_name.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+      </div>
+      <div class="field">
+        <label for="{{ form.phone.id_for_label }}">Phone</label>
+        {{ form.phone }}
+        {% if form.phone.errors %}<ul class="errorlist">{% for e in form.phone.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+      <div class="field">
+        <label for="{{ form.email.id_for_label }}">Email</label>
+        {{ form.email }}
+        {% if form.email.errors %}<ul class="errorlist">{% for e in form.email.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="{{ form.organization.id_for_label }}">Company</label>
+          {{ form.organization }}
+          {% if form.organization.errors %}<ul class="errorlist">{% for e in form.organization.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        <div class="field">
+          <label for="{{ form.title.id_for_label }}">Job title</label>
+          {{ form.title }}
+          {% if form.title.errors %}<ul class="errorlist">{% for e in form.title.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:6px;">
+        <label for="{{ form.website.id_for_label }}">Website</label>
+        {{ form.website }}
+        {% if form.website.errors %}<ul class="errorlist">{% for e in form.website.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+    </div>
+    <div class="btn-row" style="margin-top:18px;">
+      <button class="btn btn--accent" type="submit">{% if is_create %}Save card{% else %}Save changes{% endif %}</button>
+      <a class="btn btn--ghost" href="{% url 'cards:list' %}">Cancel</a>
+    </div>
+  </section>
+
+  <section>
+    <div class="form-head">Live preview</div>
+    <div class="preview-card" id="card">
+      <div class="pc-info">
+        <span class="pc-tag">Example — start typing</span>
+        <div class="pc-name" id="pvName">Your name</div>
+        <div class="pc-role" id="pvRole"></div>
+        <ul class="pc-lines">
+          <li id="pvPhoneLi" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <span id="pvPhone"></span>
+          </li>
+          <li id="pvEmailLi" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
+            <span id="pvEmail"></span>
+          </li>
+          <li id="pvUrlLi" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            <span id="pvUrl"></span>
+          </li>
+        </ul>
+      </div>
+      <div class="pc-qr"><div class="qr-tile"><div id="qr"></div></div></div>
+    </div>
+    <p class="hint" style="margin-top:14px;">Preview updates as you type. The saved card gets its own permanent QR code and .vcf download.</p>
+  </section>
+</form>
+{% endblock %}
+
+{% block body_extra %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(function(){
+  var map = { first:'id_first_name', last:'id_last_name', phone:'id_phone', email:'id_email', org:'id_organization', title:'id_title', url:'id_website' };
+  var el = {};
+  Object.keys(map).forEach(function(k){ el[k] = document.getElementById(map[k]); });
+  if(!el.first){ return; }
+
+  var SAMPLE = { first:'Ada', last:'Lovelace', phone:'+1 (555) 0100', email:'ada@analytical.co', org:'Analytical Engines', title:'Founder', url:'analytical.co' };
+  var qrHolder = document.getElementById('qr');
+  var card = document.getElementById('card');
+
+  function val(k){ return el[k] ? el[k].value.trim() : ''; }
+  function values(){ var v = {}; Object.keys(map).forEach(function(k){ v[k] = val(k); }); return v; }
+  function isEmpty(v){ return Object.keys(map).every(function(k){ return !v[k]; }); }
+  function esc(s){ return String(s).replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;'); }
+  function normUrl(u){ if(!u){ return ''; } return /^https?:\/\//i.test(u) ? u : 'https://' + u; }
+
+  function buildVCard(v){
+    var L = ['BEGIN:VCARD', 'VERSION:3.0'];
+    L.push('N:' + esc(v.last) + ';' + esc(v.first) + ';;;');
+    var fn = (v.first + ' ' + v.last).trim();
+    L.push('FN:' + esc(fn || v.phone || v.email || 'Contact'));
+    if(v.org){ L.push('ORG:' + esc(v.org)); }
+    if(v.title){ L.push('TITLE:' + esc(v.title)); }
+    if(v.phone){ L.push('TEL;TYPE=CELL:' + esc(v.phone)); }
+    if(v.email){ L.push('EMAIL;TYPE=INTERNET:' + esc(v.email)); }
+    if(v.url){ L.push('URL:' + esc(normUrl(v.url))); }
+    L.push('END:VCARD');
+    return L.join('\r\n');
+  }
+
+  function setLine(liId, spanId, value, display){
+    var li = document.getElementById(liId), span = document.getElementById(spanId);
+    if(value){ span.textContent = display || value; li.hidden = false; } else { li.hidden = true; }
+  }
+  function drawQR(text){
+    if(typeof QRCode === 'undefined'){ return; }
+    qrHolder.innerHTML = '';
+    new QRCode(qrHolder, { text:text, width:640, height:640, colorDark:'#1b1712', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.M });
+  }
+  function render(){
+    var v = values(), demo = isEmpty(v), d = demo ? SAMPLE : v;
+    card.classList.toggle('is-demo', demo);
+    var name = (d.first + ' ' + d.last).trim();
+    document.getElementById('pvName').textContent = name || (d.phone || d.email || 'Contact');
+    document.getElementById('pvRole').textContent = [d.title, d.org].filter(Boolean).join(' \u00b7 ');
+    setLine('pvPhoneLi', 'pvPhone', d.phone);
+    setLine('pvEmailLi', 'pvEmail', d.email);
+    setLine('pvUrlLi', 'pvUrl', d.url, d.url ? d.url.replace(/^https?:\/\//i, '') : '');
+    drawQR(buildVCard(d));
+  }
+  var raf;
+  function schedule(){ cancelAnimationFrame(raf); raf = requestAnimationFrame(render); }
+  Object.keys(map).forEach(function(k){ if(el[k]){ el[k].addEventListener('input', schedule); } });
+  render();
+})();
+</script>
+{% endblock %}
