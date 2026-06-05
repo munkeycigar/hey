@@ -1,0 +1,5 @@
+## Coding Agent — Add Docker app image
+**Files changed:** `.dockerignore`, `Dockerfile`, `docker/entrypoint.sh`, `tests/test_docker_artifacts.py`, `ARCHITECTURE.md`, `PLAN.md`, `HANDOFF.md`, `docs/README.md`, `docs/architecture.md`, `docs/features/deployment.md`, `docs/CHANGELOG.md`
+**Docs updated:** `docs/README.md`, `docs/architecture.md`, `docs/features/deployment.md`, `docs/CHANGELOG.md`
+**What was done:** Added the Django app Docker image path with build context exclusions and an executable entrypoint that runs migrations, collectstatic, and Gunicorn. Added a dependency-free artifact test and scoped docs for the Docker image.
+**For next agent:** Run `docker build -t hey-app:test .` and a container startup check in an environment with Docker daemon access; this sandbox blocks `/Users/leoreyes/.docker/run/docker.sock` with `connect: operation not permitted`. Commit the changes in an environment that can write `.git/index.lock`; this sandbox returns `Operation not permitted` for `.git` writes. Compose and Postgres service changes are intentionally left for the next deployment task.

@@ -6,17 +6,24 @@ _Canonical architectural map for this project. Both human developers and AI agen
 virtual business card
 
 ## Tech Stack
-<!-- List the main frameworks, runtime, database/storage, auth, deployment target, and important libraries. -->
+- Django 5.2 backend
+- PostgreSQL database configured through `DATABASE_URL`
+- WhiteNoise static file serving
+- Gunicorn application server
+- Docker app image built from `python:3.12-slim`
 
 ## Key Directories
 - `docs/` — human-facing project documentation
+- `docker/` — container startup scripts
+- `Dockerfile` — production-style Django app image build
+- `.dockerignore` — Docker build context exclusions for secrets and generated files
 - `CLAUDE.md` / `AGENTS.md` — agent context and conventions
 
 ## Data Model
 <!-- Describe the main entities, relationships, and persistence strategy. -->
 
 ## Request / Execution Flow
-<!-- Describe how work moves through the app, from UI/API/CLI entrypoints into business logic and storage. -->
+In the Docker app image, `docker/entrypoint.sh` runs database migrations, collects static files, and then starts `gunicorn config.wsgi:application` on `0.0.0.0:${PORT:-8000}`.
 
 ## Auth & Permissions
 <!-- Describe authentication, authorization, roles, and where permission checks happen. -->
@@ -27,7 +34,8 @@ virtual business card
 All agents must read this `ARCHITECTURE.md` and `CLAUDE.md` before making structural changes.
 
 ## Important Conventions
-<!-- Document naming, module boundaries, testing patterns, state management, error handling, and where new code should go. -->
+- Keep secrets and generated runtime files out of Docker build contexts with `.dockerignore`.
+- Container startup should go through `docker/entrypoint.sh` so migrations and static collection run before Gunicorn.
 
 ## Known Tradeoffs
 <!-- Record intentional shortcuts, constraints, or decisions that future agents should not accidentally undo. -->
