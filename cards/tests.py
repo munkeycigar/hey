@@ -100,6 +100,22 @@ class CardFlowTests(TestCase):
         self.assertContains(resp, "Download QR")
         self.assertContains(resp, "qr-fullscreen__tile")
 
+    def test_detail_page_links_to_qr_fullscreen(self):
+        self.client.force_login(self.user)
+        card = BusinessCard.objects.create(
+            owner=self.user,
+            first_name="Ada",
+            last_name="Lovelace",
+        )
+
+        resp = self.client.get(reverse("cards:detail", args=[card.pk]))
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Fullscreen QR")
+        self.assertContains(resp, reverse("cards:qr_fullscreen", args=[card.pk]))
+        self.assertContains(resp, reverse("cards:vcf", args=[card.pk]))
+        self.assertContains(resp, reverse("cards:qr", args=[card.pk]))
+
     def test_qr_fullscreen_page_hides_other_users_card(self):
         other = User.objects.create_user("charles", password=PW)
         card = BusinessCard.objects.create(

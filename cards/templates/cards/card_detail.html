@@ -40,6 +40,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
       Download .vcf
     </a>
+    <a class="btn btn--ghost" href="{% url 'cards:qr_fullscreen' card.pk %}">Fullscreen QR</a>
     <a class="btn btn--ghost" href="{% url 'cards:qr' card.pk %}" download="{{ card.display_name|default:'contact' }}-qr.png">Download QR (PNG)</a>
     <span class="hint">Scan with a phone camera to add the contact</span>
   </div>

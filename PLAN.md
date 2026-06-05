@@ -118,3 +118,40 @@ Add an authenticated owner-protected full-viewport QR page for business cards.
 - Adding the card detail page entry point to fullscreen QR.
 - Changing QR PNG generation or vCard serialization.
 - Changing account authentication behavior.
+
+---
+
+# Plan — Link Detail Page To Fullscreen QR
+
+## Goal
+Add a clear Fullscreen QR action on the card detail page while preserving existing vCard and QR PNG download actions.
+
+## Checklist
+- [x] Add a failing detail-page test for the fullscreen QR link and existing download actions.
+- [x] Verify the new detail-page link test fails before production template changes.
+- [x] Add the Fullscreen QR action to the card detail page.
+- [x] Update human-facing docs and changelog for the detail-page action.
+- [x] Run targeted and relevant regression tests.
+- [x] Run integration checks for related card actions.
+- [x] Append handoff notes.
+- [ ] Commit the implementation.
+
+## Verification Notes
+- Red test run: `test_detail_page_links_to_qr_fullscreen` failed because `Fullscreen QR` was missing from the card detail response.
+- Green targeted run: `test_detail_page_links_to_qr_fullscreen` passed under the constrained Django harness using SQLite and local import shims.
+- Regression run: `python3 manage.py test cards -v 2` passed 11 tests under the same constrained Django harness.
+- Repository artifact tests: `python3 -m unittest discover -s tests -v` passed 2 tests.
+- Syntax check: `python3 -m compileall accounts cards config manage.py` passed.
+- Whitespace check: `git diff --check` passed.
+- Unshimmed Django test commands are blocked because this workspace `.venv` lacks Django and sandbox DNS blocks `pip install -r requirements.txt`.
+- Commit is blocked in this sandbox because Git cannot create `.git/index.lock`: `Operation not permitted`.
+
+## Integration Check
+- Card detail now links to `cards:qr_fullscreen`.
+- Existing `cards:vcf` and `cards:qr` card detail actions remain in the same action row.
+- No records are created or updated by this task, and no other feature needs to react to new data.
+
+## Out of Scope
+- Changing the fullscreen QR route, view, template, or styles from Task 1.
+- Changing QR PNG generation or vCard serialization.
+- Changing API endpoints, payloads, auth behavior, errors, or webhooks.

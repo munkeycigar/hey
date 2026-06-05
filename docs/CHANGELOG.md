@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026-06-05 — Link card detail to fullscreen QR
+- Add a Fullscreen QR action to card detail pages while keeping `.vcf` and PNG downloads available.
+
 ## 2026-06-05 — Add fullscreen QR page
 - Add an owner-protected fullscreen QR page for presenting a card name and large QR code.
 
