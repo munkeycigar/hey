@@ -85,6 +85,110 @@ account, then start adding cards.
 
 ---
 
+## Docker Compose deployment on localhost:9600
+
+This repository includes a local production-style Docker Compose deployment for
+the host that already runs Cloudflare Tunnel. Compose starts the Django app and a
+PostgreSQL database. It does not configure Cloudflare, DNS, TLS certificates, or
+the tunnel service.
+
+### 1. Configure deployment environment
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and set:
+
+```dotenv
+SECRET_KEY=<generate-a-real-django-secret-key>
+DEBUG=False
+ALLOWED_HOSTS=hey.leorey.es,localhost,127.0.0.1
+CSRF_TRUSTED_ORIGINS=https://hey.leorey.es,http://localhost:9600,http://127.0.0.1:9600
+POSTGRES_DB=hey
+POSTGRES_USER=hey
+POSTGRES_PASSWORD=<use-a-long-random-password>
+DATABASE_URL=postgres://hey:<same-password-url-encoded-if-needed>@db:5432/hey
+```
+
+Generate a Django secret key with:
+
+```bash
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
+
+### 2. Start the stack
+
+```bash
+docker compose up -d --build
+docker compose ps
+```
+
+The app listens only on the Docker host loopback interface:
+
+```text
+http://127.0.0.1:9600
+```
+
+Point the existing Cloudflare Tunnel origin for `hey.leorey.es` to:
+
+```text
+http://127.0.0.1:9600
+```
+
+### 3. Verify the deployment
+
+```bash
+curl -I http://127.0.0.1:9600/accounts/login/
+curl -I -H "Host: hey.leorey.es" -H "X-Forwarded-Proto: https" http://127.0.0.1:9600/accounts/login/
+docker compose logs -f app
+```
+
+Expected: the login route returns `HTTP/1.1 200 OK`.
+
+### 4. Admin and maintenance commands
+
+Create an admin user:
+
+```bash
+docker compose exec app python manage.py createsuperuser
+```
+
+Run migrations manually:
+
+```bash
+docker compose exec app python manage.py migrate
+```
+
+View logs:
+
+```bash
+docker compose logs -f app
+docker compose logs -f db
+```
+
+Update after pulling changes:
+
+```bash
+git pull
+docker compose up -d --build
+docker compose logs -f app
+```
+
+Stop the stack without deleting database data:
+
+```bash
+docker compose down
+```
+
+Delete the local database volume:
+
+```bash
+docker compose down -v
+```
+
+---
+
 ## Configuration
 
 All configuration is read from the environment (see `.env.example`):

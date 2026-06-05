@@ -1,34 +1,27 @@
 # Hey Architecture
 
-## Product Shape
-Hey is a Django virtual business card app. Users create private contact cards that can be rendered as QR codes and downloaded as vCard files.
+Hey is a Django 5.2 app that stores virtual business cards in PostgreSQL. Users authenticate with Django's session auth, create cards, and download QR PNG or vCard files from server-rendered routes.
 
-## Runtime Components
-- Django 5.2 serves the web app through `config.wsgi`.
-- PostgreSQL is the configured database backend via `DATABASE_URL`.
-- WhiteNoise serves collected static files.
-- Gunicorn is the production-style application server.
-- The Docker app image builds from `python:3.12-slim` and starts through `docker/entrypoint.sh`.
-- Docker Compose runs the `app` service with a PostgreSQL `db` service for localhost deployment.
+## Runtime shape
 
-## Docker App Image
-The root `Dockerfile` installs system PostgreSQL client libraries, installs `requirements.txt`, copies the app into `/app`, and exposes port `8000`.
+- `config/` contains Django settings, URL routing, WSGI, and ASGI entrypoints.
+- `accounts/` contains registration and login/logout views.
+- `cards/` contains the business card model, forms, views, templates, QR output, and vCard output.
+- `static/` contains shared CSS served by WhiteNoise in Docker.
+- `docker-compose.yml` runs the app and database for localhost deployment.
 
-The container entrypoint runs:
+## Deployment flow
 
-```sh
-python manage.py migrate --noinput
-python manage.py collectstatic --noinput
-gunicorn config.wsgi:application
-```
+Docker Compose builds the Django image from `Dockerfile`, starts PostgreSQL, waits for database health, then starts the app through `docker/entrypoint.sh`.
 
-Secrets and generated files are excluded from the Docker build context through `.dockerignore`.
+The app startup flow is:
 
-## Docker Compose Deployment
-`docker-compose.yml` defines a complete local deployment stack:
+1. `python manage.py migrate --noinput`
+2. `python manage.py collectstatic --noinput`
+3. `gunicorn config.wsgi:application --bind 0.0.0.0:8000`
 
-- `db` runs `postgres:16-alpine`, uses `pg_isready` for health, and persists data in the named `postgres_data` volume.
-- `app` builds from the local Dockerfile, waits for `db` to become healthy, and receives deployment settings through environment variables.
-- The app publishes only to host loopback at `127.0.0.1:9600:8000`.
+Compose publishes the app on `127.0.0.1:9600`. Cloudflare Tunnel is managed outside this repository and should target `http://127.0.0.1:9600`.
 
-Cloudflare Tunnel is managed outside this repository. Its origin should target `http://127.0.0.1:9600` on the Docker host.
+## Data flow
+
+Browser requests reach Django through either local development or the Cloudflare Tunnel origin. Authenticated users manage `cards.BusinessCard` records. QR PNG and `.vcf` responses are generated from card data at request time.

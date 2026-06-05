@@ -3,47 +3,67 @@
 _Canonical architectural map for this project. Both human developers and AI agents should read this before making structural changes. Keep it current as the system evolves._
 
 ## Product Shape
-virtual business card
+
+Hey is a virtual business card app. Authenticated users create contact cards, view them in the browser, download `.vcf` contact files, and access QR PNGs for adding contacts from phones.
 
 ## Tech Stack
-- Django 5.2 backend
-- PostgreSQL database configured through `DATABASE_URL`
-- WhiteNoise static file serving
-- Gunicorn application server
-- Docker app image built from `python:3.12-slim`
-- Docker Compose local deployment with `app` and PostgreSQL `db` services
+
+- Django 5.2 — web framework, session auth, templates, ORM, admin.
+- PostgreSQL — persistent database for users and business cards.
+- Gunicorn — production WSGI server in Docker.
+- WhiteNoise — static file serving for collected assets.
+- Docker Compose — local deployment with `app` and `db` services.
 
 ## Key Directories
-- `docs/` — human-facing project documentation
-- `docker/` — container startup scripts
-- `Dockerfile` — production-style Django app image build
-- `docker-compose.yml` — localhost deployment stack for `app` and `db`
-- `.dockerignore` — Docker build context exclusions for secrets and generated files
-- `CLAUDE.md` / `AGENTS.md` — agent context and conventions
+
+- `config/` — Django settings, URL routing, WSGI, and ASGI entrypoints.
+- `accounts/` — registration and login/logout flows.
+- `cards/` — business card model, forms, views, templates, QR PNG output, and vCard output.
+- `static/` — shared CSS.
+- `docker/` — container startup scripts.
+- `docs/` — human-facing project documentation.
+- `implementation-plans/` — Alfreds implementation plans.
+- `CLAUDE.md` / `AGENTS.md` — agent context and conventions.
 
 ## Data Model
-<!-- Describe the main entities, relationships, and persistence strategy. -->
+
+- `cards.BusinessCard` belongs to a Django auth user through `owner`.
+- Card fields store contact identity, organization, phone, email, website, and timestamps.
+- `BusinessCard.to_vcard()` serializes a card to vCard 3.0 text for QR and `.vcf` responses.
 
 ## Request / Execution Flow
-In the Docker app image, `docker/entrypoint.sh` runs database migrations, collects static files, and then starts `gunicorn config.wsgi:application` on `0.0.0.0:${PORT:-8000}`.
 
-For local deployment, Docker Compose starts PostgreSQL 16 Alpine as `db`, waits for its `pg_isready` healthcheck, then starts the Django `app`. Compose publishes the app on `127.0.0.1:9600:8000` and stores database files in the named `postgres_data` volume.
+Browser requests enter Django through `config.urls`. Account routes handle registration and auth. Card routes enforce owner isolation, render templates, and generate QR PNG or `.vcf` responses from card records.
+
+For Docker deployment, Compose starts PostgreSQL first, waits for database health, then starts the Django app. The app entrypoint runs migrations, collects static files, and launches Gunicorn on container port `8000`. Compose publishes that port on `127.0.0.1:9600` only.
 
 ## Auth & Permissions
-<!-- Describe authentication, authorization, roles, and where permission checks happen. -->
 
-## Agent Orchestration
-<!-- Describe the AI agents involved, their responsibilities, handoff points, and files they should read before making changes. -->
+Django session auth protects card management. Card views filter by the logged-in user so one user cannot view, edit, delete, or download another user's card.
 
-All agents must read this `ARCHITECTURE.md` and `CLAUDE.md` before making structural changes.
+## Deployment
+
+The local deployment target is a Docker host with Cloudflare Tunnel already running outside this repository. `docker-compose.yml` runs:
+
+- `db` — PostgreSQL with a named `postgres_data` volume.
+- `app` — Django/Gunicorn image built from the repository.
+
+The public host `hey.leorey.es` should point through the existing tunnel to `http://127.0.0.1:9600`.
 
 ## Important Conventions
-- Keep secrets and generated runtime files out of Docker build contexts with `.dockerignore`.
-- Container startup should go through `docker/entrypoint.sh` so migrations and static collection run before Gunicorn.
-- Compose should bind the app to host loopback only (`127.0.0.1:9600`) so an external Cloudflare Tunnel can target that local origin without exposing the container directly on all interfaces.
+
+- Read configuration from environment variables.
+- Keep secrets out of source files and `.env.example`.
+- Use trailing slashes in Django routes.
+- Do not add Cloudflare Tunnel service management to this repository.
+- Read `API.md` before changing endpoints, payloads, auth behavior, errors, or webhooks.
 
 ## Known Tradeoffs
-<!-- Record intentional shortcuts, constraints, or decisions that future agents should not accidentally undo. -->
+
+- The Compose deployment runs migrations automatically on app startup for operational simplicity.
+- TLS termination is delegated to Cloudflare Tunnel.
+- The app binds to host loopback only, which is correct for a local tunnel origin and avoids exposing port `9600` on the LAN.
 
 ## Open Questions
-<!-- Track unresolved architectural decisions. -->
+
+- None.

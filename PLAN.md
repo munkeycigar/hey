@@ -53,3 +53,31 @@ Make `docker compose up -d --build` run the complete local Hey deployment stack 
 - Changing API endpoints, payloads, auth, errors, or webhooks.
 - Configuring Cloudflare Tunnel, DNS, TLS, or host-level services.
 - Building or running containers beyond Compose configuration validation in this task.
+
+---
+
+# Plan — Document Localhost Deployment
+
+## Goal
+Document how maintainers deploy Hey locally on `127.0.0.1:9600` for an external Cloudflare Tunnel origin.
+
+## Checklist
+- [x] Update `README.md` with Docker deployment start, verify, logs, update, and stop commands.
+- [x] Update `docs/README.md` as the human-facing documentation index.
+- [x] Update `docs/architecture.md` with the localhost Compose and external tunnel architecture.
+- [x] Update `docs/features/deployment.md` with the deployment guide and required commands.
+- [x] Add a dated `docs/CHANGELOG.md` entry for the deployment documentation.
+- [x] Update `ARCHITECTURE.md` with the canonical Cloudflare Tunnel origin setup.
+- [x] Verify the documentation covers the acceptance criteria and command examples.
+- [x] Append handoff notes and attempt to commit the documentation changes.
+
+## Verification Notes
+- `rg -n "Cloudflare Tunnel|http://127\\.0\\.0\\.1:9600|docker compose up -d --build|docker compose logs -f app|git pull|docker compose down" README.md docs/README.md docs/architecture.md docs/features/deployment.md docs/CHANGELOG.md ARCHITECTURE.md` confirms the required documentation coverage.
+- `git diff --check` passes.
+- `python3 -m unittest discover -s tests -v` passes with 2 tests.
+- `git add README.md docs/README.md docs/architecture.md docs/features/deployment.md docs/CHANGELOG.md ARCHITECTURE.md PLAN.md HANDOFF.md && git commit -m "docs: document localhost compose deployment"` is blocked in this sandbox because `.git/index.lock` cannot be created: `Operation not permitted`.
+
+## Out of Scope
+- Changing Docker Compose behavior or application runtime code.
+- Configuring Cloudflare Tunnel, DNS, TLS, or host-level services.
+- Changing API endpoints, payloads, auth, errors, or webhooks.

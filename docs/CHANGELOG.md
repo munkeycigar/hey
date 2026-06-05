@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026-06-05 — Document localhost deployment
+- Document how maintainers deploy Hey on `127.0.0.1:9600` behind an existing Cloudflare Tunnel.
+
 ## 2026-06-05 — Add Compose app and PostgreSQL deployment
 - Run the local Docker deployment with `app` and `db` services.
 - Bind the app to `127.0.0.1:9600` and persist PostgreSQL data in `postgres_data`.
