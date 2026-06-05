@@ -4,8 +4,11 @@ Hey is a Django app for creating virtual business cards with QR codes and vCard 
 
 ## Documentation Index
 - [Architecture](architecture.md) — project structure and runtime shape.
-- [Docker App Image](features/deployment.md) — Docker image build and container entrypoint behavior.
+- [Docker Compose Deployment](features/deployment.md) — localhost app and PostgreSQL deployment.
 - [Changelog](CHANGELOG.md) — notable project changes.
 
 ## Local Development
 Use the root [README](../README.md) for Python setup, environment variables, migrations, and local development commands.
+
+## Local Docker Deployment
+Use [Docker Compose Deployment](features/deployment.md) to run the app and PostgreSQL on `127.0.0.1:9600`.

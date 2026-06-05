@@ -1,24 +1,49 @@
-# Docker App Image
+# Docker Compose Deployment
 
 ## What It Does
-The project includes a Docker build path for the Django app. The image installs the app dependencies, copies the source into `/app`, and starts with an entrypoint that prepares the database/static assets before launching Gunicorn.
+The project includes a local Docker Compose deployment for the Django app and PostgreSQL. It is intended for a host where Cloudflare Tunnel is configured separately and targets the local app origin.
 
-## Build
+## Services
+- `db` runs PostgreSQL 16 Alpine and stores data in the named `postgres_data` volume.
+- `app` builds the Django image from the root `Dockerfile`, waits for `db` to become healthy, runs the entrypoint, and serves Gunicorn on container port `8000`.
+
+## Configuration
+Copy `.env.example` to `.env` and update secrets before starting the stack:
+
 ```bash
-docker build -t hey-app:test .
+cp .env.example .env
 ```
 
-## Runtime Behavior
-`docker/entrypoint.sh` runs migrations, collects static files, and then starts:
+For deployment, set `DEBUG=False`, configure `SECRET_KEY`, choose a strong `POSTGRES_PASSWORD`, and set `DATABASE_URL` to use the `db` service hostname.
 
+## Start
 ```bash
-gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000}
+docker compose up -d --build
 ```
 
-Set `PORT`, `WEB_CONCURRENCY`, and `WEB_TIMEOUT` to tune the container process. The app also requires the usual Django environment values such as `SECRET_KEY`, `DATABASE_URL`, `ALLOWED_HOSTS`, and `CSRF_TRUSTED_ORIGINS`.
+The app listens on the Docker host loopback interface:
 
-## Build Context Safety
-`.dockerignore` excludes local secrets, git metadata, virtualenvs, SQLite files, collected static files, media uploads, editor files, and Alfreds internal workspace files from the image build context.
+```text
+http://127.0.0.1:9600
+```
 
-## Current Scope
-This task adds the app image only. Replacing Compose with separate app and PostgreSQL services is covered by the next deployment task.
+Point the Cloudflare Tunnel origin for `hey.leorey.es` to `http://127.0.0.1:9600`.
+
+## Verify
+```bash
+docker compose config --services
+docker compose config
+docker compose ps
+```
+
+The rendered Compose config should include `db`, `app`, `host_ip: 127.0.0.1`, `published: "9600"`, and the `postgres_data` volume.
+
+## Maintenance
+```bash
+docker compose logs -f app
+docker compose logs -f db
+docker compose down
+docker compose down -v
+```
+
+Use `docker compose down` to stop containers while keeping database data. Use `docker compose down -v` only when the local PostgreSQL data should be deleted.
