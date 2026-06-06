@@ -155,3 +155,46 @@ Add a clear Fullscreen QR action on the card detail page while preserving existi
 - Changing the fullscreen QR route, view, template, or styles from Task 1.
 - Changing QR PNG generation or vCard serialization.
 - Changing API endpoints, payloads, auth behavior, errors, or webhooks.
+
+---
+
+# Plan — Upgrade Fullscreen QR Presentation Layout
+
+## Goal
+Refine the fullscreen QR page into a mobile-fit presentation display with a prominent card name, centered scannable QR code, and secondary controls.
+
+## Checklist
+- [x] Add failing fullscreen QR presentation assertions for viewport-fit, layout hooks, card identity, QR image, and access links.
+- [x] Verify the focused fullscreen QR test fails before production template or CSS changes.
+- [x] Replace the fullscreen QR template markup with the presentation layout.
+- [x] Replace the fullscreen QR CSS with safe-viewport presentation styles and mobile/short-height constraints.
+- [x] Update human-facing docs and changelog for the fullscreen QR presentation behavior.
+- [x] Run focused, cards, artifact, syntax, route, and whitespace verification.
+- [x] Run an integration check for related card display and QR actions.
+- [x] Append handoff notes.
+- [ ] Commit the implementation.
+
+## Verification Notes
+- Red test run: `test_qr_fullscreen_page_renders_owner_card` failed because the first-pass template did not include `viewport-fit=cover`.
+- Green focused run: `test_qr_fullscreen_page_renders_owner_card` passed under the constrained Django harness with SQLite and local import shims.
+- `python3 manage.py test cards -v 2` passed 11 tests under the constrained Django harness.
+- `python3 manage.py test -v 2` passed 11 tests under the constrained Django harness.
+- `python3 -m unittest discover -s tests -v` passed 2 tests.
+- `python3 -m compileall accounts cards config manage.py` passed.
+- Route resolution printed `/cards/1/qr/fullscreen/`.
+- `git diff --check cards/templates/cards/card_qr_fullscreen.html static/css/app.css cards/tests.py API.md docs/features/cards.md docs/CHANGELOG.md PLAN.md` passed.
+- Static layout fallback checks confirmed `viewport-fit=cover`, `100svh`, `overflow:hidden`, the presentation hooks, QR card sizing, and short-height CSS are present.
+- Live browser visual QA could not be completed in this sandbox: `runserver` is blocked with `Operation not permitted`, the in-app browser reports `Browser is not available: iab`, and standalone Playwright/browser renderer binaries are not installed.
+- Commit is blocked in this sandbox because `git add ...` cannot create `.git/index.lock`: `Operation not permitted`.
+
+## Integration Check
+- The fullscreen template still uses the existing `cards:qr` PNG endpoint for the QR image.
+- The compact Back control returns to the existing `cards:detail` page.
+- Existing owner isolation tests for detail, QR PNG, and fullscreen QR remain green.
+- This task creates or updates no records, so no other feature needs to react to new data.
+
+## Out of Scope
+- Changing QR PNG generation or vCard serialization.
+- Changing account authentication behavior or owner isolation rules.
+- Adding new endpoints or changing request/response payloads.
+- Building unrelated card detail, edit, or list features.

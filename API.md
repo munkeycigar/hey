@@ -31,13 +31,13 @@ Hey uses Django session authentication. Card routes require a logged-in user unl
 | GET | `/cards/<id>/` | Show one owned card. | Authenticated owner |
 | GET/POST | `/cards/<id>/edit/` | Edit one owned card. | Authenticated owner |
 | GET/POST | `/cards/<id>/delete/` | Delete one owned card. | Authenticated owner |
-| GET | `/cards/<id>/qr/fullscreen/` | Show a full-viewport HTML QR presentation page with the card name. | Authenticated owner |
+| GET | `/cards/<id>/qr/fullscreen/` | Show a mobile-first full-viewport HTML QR presentation page with the card name. | Authenticated owner |
 | GET | `/cards/<id>/qr.png` | Return a PNG QR code containing the card's vCard data. | Authenticated owner |
 | GET | `/cards/<id>/vcard.vcf` | Return the card as a downloadable vCard file. | Authenticated owner |
 
 ## Request / Response Shapes
 
-HTML routes return Django-rendered HTML. `/cards/<id>/qr/fullscreen/` returns an HTML page containing the card display name and an image that references `/cards/<id>/qr.png`. `/cards/<id>/qr.png` returns `image/png` with `Cache-Control: no-store`. `/cards/<id>/vcard.vcf` returns `text/vcard; charset=utf-8` with an attachment filename derived from the card display name.
+HTML routes return Django-rendered HTML. `/cards/<id>/qr/fullscreen/` returns a mobile-first presentation HTML page containing the card display name and an image that references `/cards/<id>/qr.png`. `/cards/<id>/qr.png` returns `image/png` with `Cache-Control: no-store`. `/cards/<id>/vcard.vcf` returns `text/vcard; charset=utf-8` with an attachment filename derived from the card display name.
 
 ## Error Model
 
@@ -63,4 +63,4 @@ Host: hey.leorey.es
 Cookie: sessionid=...
 ```
 
-Successful response: HTTP 200 with an HTML page containing the card display name and an `<img>` that references `/cards/12/qr.png`.
+Successful response: HTTP 200 with a mobile-first HTML presentation page containing the card display name and an `<img>` that references `/cards/12/qr.png`.

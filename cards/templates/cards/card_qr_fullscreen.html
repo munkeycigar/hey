@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>{{ card.display_name|default:card.full_label }} QR · hey</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,17 +11,17 @@
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
 <body class="qr-fullscreen-body">
-  <main class="qr-fullscreen">
+  <main class="qr-fullscreen qr-fullscreen--presentation">
     <div class="qr-fullscreen__actions" aria-label="QR actions">
-      <a class="btn btn--ghost btn--sm" href="{% url 'cards:detail' card.pk %}">Back to card</a>
-      <a class="btn btn--sm" href="{% url 'cards:qr' card.pk %}" download="{{ card.display_name|default:'contact' }}-qr.png">Download QR</a>
+      <a class="btn btn--ghost btn--sm" href="{% url 'cards:detail' card.pk %}">Back</a>
+      <a class="btn btn--sm" href="{% url 'cards:qr' card.pk %}" download="{{ card.display_name|default:'contact' }}-qr.png">Download</a>
     </div>
 
-    <section class="qr-fullscreen__content" aria-labelledby="qr-fullscreen-title">
-      <span class="kicker">Contact QR</span>
-      <h1 id="qr-fullscreen-title">{{ card.display_name|default:card.full_label }}</h1>
+    <section class="qr-fullscreen__stage" aria-labelledby="qr-fullscreen-title">
+      <span class="qr-fullscreen__eyebrow">hey contact</span>
+      <h1 id="qr-fullscreen-title" title="{{ card.display_name|default:card.full_label }}">{{ card.display_name|default:card.full_label }}</h1>
       {% if card.role_line %}<p class="qr-fullscreen__role">{{ card.role_line }}</p>{% endif %}
-      <div class="qr-fullscreen__tile">
+      <div class="qr-fullscreen__qr-card">
         <img src="{% url 'cards:qr' card.pk %}" alt="QR code for {{ card.display_name|default:card.full_label }}">
       </div>
     </section>

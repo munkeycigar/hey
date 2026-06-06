@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026-06-06 — Improve fullscreen QR presentation
+- Improve the fullscreen QR page with mobile-safe viewport sizing and a polished presentation-display layout.
+
 ## 2026-06-05 — Link card detail to fullscreen QR
 - Add a Fullscreen QR action to card detail pages while keeping `.vcf` and PNG downloads available.
 

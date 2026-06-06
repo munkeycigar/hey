@@ -97,8 +97,10 @@ class CardFlowTests(TestCase):
         self.assertContains(resp, "Founder · Analytical Engines")
         self.assertContains(resp, reverse("cards:qr", args=[card.pk]))
         self.assertContains(resp, reverse("cards:detail", args=[card.pk]))
-        self.assertContains(resp, "Download QR")
-        self.assertContains(resp, "qr-fullscreen__tile")
+        self.assertContains(resp, "Download")
+        self.assertContains(resp, "viewport-fit=cover")
+        self.assertContains(resp, "qr-fullscreen--presentation")
+        self.assertContains(resp, "qr-fullscreen__qr-card")
 
     def test_detail_page_links_to_qr_fullscreen(self):
         self.client.force_login(self.user)

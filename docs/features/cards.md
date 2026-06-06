@@ -14,7 +14,7 @@ Each card detail page at `/cards/<id>/` shows the display name, role line, conta
 
 The QR PNG endpoint at `/cards/<id>/qr.png` encodes the card's vCard data and is only available to the card owner. The detail page uses this endpoint for its QR preview and PNG download.
 
-The fullscreen QR page at `/cards/<id>/qr/fullscreen/` shows the card name and a large QR code in a focused layout. It is linked from the card detail page and is intended for presenting a card from a phone, tablet, or display while keeping the normal detail page available for editing and downloads.
+The fullscreen QR page at `/cards/<id>/qr/fullscreen/` shows the card name and a large QR code in a mobile-first presentation layout. It is linked from the card detail page and is intended for presenting a card from a phone, tablet, or display while keeping the normal detail page available for editing and downloads.
 
 ## vCard Downloads
 
