@@ -1,62 +1,42 @@
-# Fullscreen QR Implementation Plan
+# Fullscreen QR Presentation Display Implementation Plan
 
 > **For executing agents:** Apply the `subagent-driven-development` skill (recommended) or `executing-plans` skill to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add an authenticated full-viewport page that shows a card's name and large QR code.
+**Goal:** Upgrade the fullscreen QR page so it fits mobile screens and reads as a polished presentation display with the card name and QR code.
 
-**Architecture:** Add one owner-protected Django `DetailView` in the existing `cards` app. The new HTML page reuses the current `cards:qr` PNG endpoint so QR generation and authorization stay centralized.
+**Architecture:** Keep the existing authenticated `cards:qr_fullscreen` Django route and continue reusing the `cards:qr` PNG endpoint. Update the standalone fullscreen template and shared CSS so the page uses mobile-safe viewport sizing, safe-area padding, long-name handling, and compact controls that do not compete with scanning.
 
 **Tech Stack:** Django 5.2 class-based views, Django templates, existing shared CSS in `static/css/app.css`, Django `TestCase`.
 
-**Relevant Alfreds agents:** coding owns Tasks 1-3; testing owns Task 4.
+**Relevant Alfreds agents:** coding owns Tasks 1-2; testing/QA owns Task 3.
 
 ---
 
 ## File Structure
 
-- `cards/views.py` — add `CardQRFullscreenView` using `OwnedCardsMixin`.
-- `cards/urls.py` — add the trailing-slash `cards:qr_fullscreen` route.
-- `cards/templates/cards/card_qr_fullscreen.html` — create the standalone full-viewport QR page.
-- `cards/templates/cards/card_detail.html` — add the entry link from the card detail actions.
-- `static/css/app.css` — add focused fullscreen QR layout styles.
-- `cards/tests.py` — add route, access-control, template, and detail-link tests.
-- `API.md` — document the route, auth behavior, and response type.
-- `docs/README.md` — link to the card feature documentation.
-- `docs/features/cards.md` — create human-facing card feature documentation.
-- `docs/CHANGELOG.md` — record the user-visible fullscreen QR feature.
+- `cards/tests.py` — strengthen fullscreen QR assertions for the presentation-display layout hook.
+- `cards/templates/cards/card_qr_fullscreen.html` — replace the first-pass utility layout with a mobile-first presentation page.
+- `static/css/app.css` — replace fullscreen QR styles with mobile-safe `100svh` layout, constrained QR sizing, and polished display treatment.
+- `API.md` — clarify the fullscreen route returns a mobile presentation page.
+- `docs/features/cards.md` — document the presentation-display behavior.
+- `docs/CHANGELOG.md` — record the design improvement.
 
 ---
 
-### Task 1: Add Fullscreen QR Route And Page
+### Task 1: Upgrade Fullscreen QR Presentation Layout
 
 **Files:**
 - Modify: `cards/tests.py`
-- Modify: `cards/views.py`
-- Modify: `cards/urls.py`
-- Create: `cards/templates/cards/card_qr_fullscreen.html`
+- Modify: `cards/templates/cards/card_qr_fullscreen.html`
 - Modify: `static/css/app.css`
 
 **Assigned agent:** coding
 
-- [ ] **Step 1: Write failing tests for the fullscreen QR route**
+- [ ] **Step 1: Update the fullscreen page test**
 
-Add these methods inside `CardFlowTests` in `cards/tests.py`, after `test_qr_png_and_vcf`:
+In `cards/tests.py`, replace `test_qr_fullscreen_page_renders_owner_card` with:
 
 ```python
-    def test_qr_fullscreen_page_requires_login(self):
-        card = BusinessCard.objects.create(
-            owner=self.user,
-            first_name="Ada",
-            last_name="Lovelace",
-        )
-        url = reverse("cards:qr_fullscreen", args=[card.pk])
-
-        resp = self.client.get(url)
-
-        self.assertEqual(resp.status_code, 302)
-        self.assertIn(reverse("accounts:login"), resp.url)
-        self.assertIn(url, resp.url)
-
     def test_qr_fullscreen_page_renders_owner_card(self):
         self.client.force_login(self.user)
         card = BusinessCard.objects.create(
@@ -75,69 +55,25 @@ Add these methods inside `CardFlowTests` in `cards/tests.py`, after `test_qr_png
         self.assertContains(resp, "Founder · Analytical Engines")
         self.assertContains(resp, reverse("cards:qr", args=[card.pk]))
         self.assertContains(resp, reverse("cards:detail", args=[card.pk]))
-        self.assertContains(resp, "Download QR")
-        self.assertContains(resp, "qr-fullscreen__tile")
-
-    def test_qr_fullscreen_page_hides_other_users_card(self):
-        other = User.objects.create_user("charles", password=PW)
-        card = BusinessCard.objects.create(
-            owner=other,
-            first_name="Charles",
-            last_name="Babbage",
-        )
-        self.client.force_login(self.user)
-
-        resp = self.client.get(reverse("cards:qr_fullscreen", args=[card.pk]))
-
-        self.assertEqual(resp.status_code, 404)
+        self.assertContains(resp, "Download")
+        self.assertContains(resp, "viewport-fit=cover")
+        self.assertContains(resp, "qr-fullscreen--presentation")
+        self.assertContains(resp, "qr-fullscreen__qr-card")
 ```
 
-- [ ] **Step 2: Run the new route tests to verify they fail**
+- [ ] **Step 2: Run the focused test and verify the current page fails the new design assertions**
 
 Run:
 
 ```bash
-python manage.py test cards.tests.CardFlowTests.test_qr_fullscreen_page_requires_login cards.tests.CardFlowTests.test_qr_fullscreen_page_renders_owner_card cards.tests.CardFlowTests.test_qr_fullscreen_page_hides_other_users_card -v 2
+python manage.py test cards.tests.CardFlowTests.test_qr_fullscreen_page_renders_owner_card -v 2
 ```
 
-Expected: FAIL with `django.urls.exceptions.NoReverseMatch: Reverse for 'qr_fullscreen' not found`.
+Expected before implementation: FAIL because the first-pass template does not include `viewport-fit=cover`, `qr-fullscreen--presentation`, and `qr-fullscreen__qr-card`.
 
-- [ ] **Step 3: Add the owner-protected view**
+- [ ] **Step 3: Replace the fullscreen template**
 
-In `cards/views.py`, add this class immediately after `CardDetailView`:
-
-```python
-class CardQRFullscreenView(OwnedCardsMixin, DetailView):
-    template_name = "cards/card_qr_fullscreen.html"
-    context_object_name = "card"
-```
-
-- [ ] **Step 4: Add the URL route**
-
-In `cards/urls.py`, add this route immediately after the detail route:
-
-```python
-    path("cards/<int:pk>/qr/fullscreen/", views.CardQRFullscreenView.as_view(), name="qr_fullscreen"),
-```
-
-The surrounding route list should include:
-
-```python
-urlpatterns = [
-    path("", views.CardListView.as_view(), name="list"),
-    path("cards/new/", views.CardCreateView.as_view(), name="create"),
-    path("cards/<int:pk>/", views.CardDetailView.as_view(), name="detail"),
-    path("cards/<int:pk>/qr/fullscreen/", views.CardQRFullscreenView.as_view(), name="qr_fullscreen"),
-    path("cards/<int:pk>/edit/", views.CardUpdateView.as_view(), name="edit"),
-    path("cards/<int:pk>/delete/", views.CardDeleteView.as_view(), name="delete"),
-    path("cards/<int:pk>/qr.png", views.card_qr_png, name="qr"),
-    path("cards/<int:pk>/vcard.vcf", views.card_vcf, name="vcf"),
-]
-```
-
-- [ ] **Step 5: Create the fullscreen template**
-
-Create `cards/templates/cards/card_qr_fullscreen.html` with this exact content:
+Replace `cards/templates/cards/card_qr_fullscreen.html` with:
 
 ```django
 {% load static %}
@@ -145,7 +81,7 @@ Create `cards/templates/cards/card_qr_fullscreen.html` with this exact content:
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>{{ card.display_name|default:card.full_label }} QR · hey</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -153,17 +89,17 @@ Create `cards/templates/cards/card_qr_fullscreen.html` with this exact content:
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
 <body class="qr-fullscreen-body">
-  <main class="qr-fullscreen">
+  <main class="qr-fullscreen qr-fullscreen--presentation">
     <div class="qr-fullscreen__actions" aria-label="QR actions">
-      <a class="btn btn--ghost btn--sm" href="{% url 'cards:detail' card.pk %}">Back to card</a>
-      <a class="btn btn--sm" href="{% url 'cards:qr' card.pk %}" download="{{ card.display_name|default:'contact' }}-qr.png">Download QR</a>
+      <a class="btn btn--ghost btn--sm" href="{% url 'cards:detail' card.pk %}">Back</a>
+      <a class="btn btn--sm" href="{% url 'cards:qr' card.pk %}" download="{{ card.display_name|default:'contact' }}-qr.png">Download</a>
     </div>
 
-    <section class="qr-fullscreen__content" aria-labelledby="qr-fullscreen-title">
-      <span class="kicker">Contact QR</span>
-      <h1 id="qr-fullscreen-title">{{ card.display_name|default:card.full_label }}</h1>
+    <section class="qr-fullscreen__stage" aria-labelledby="qr-fullscreen-title">
+      <span class="qr-fullscreen__eyebrow">hey contact</span>
+      <h1 id="qr-fullscreen-title" title="{{ card.display_name|default:card.full_label }}">{{ card.display_name|default:card.full_label }}</h1>
       {% if card.role_line %}<p class="qr-fullscreen__role">{{ card.role_line }}</p>{% endif %}
-      <div class="qr-fullscreen__tile">
+      <div class="qr-fullscreen__qr-card">
         <img src="{% url 'cards:qr' card.pk %}" alt="QR code for {{ card.display_name|default:card.full_label }}">
       </div>
     </section>
@@ -172,84 +108,123 @@ Create `cards/templates/cards/card_qr_fullscreen.html` with this exact content:
 </html>
 ```
 
-- [ ] **Step 6: Add fullscreen layout styles**
+- [ ] **Step 4: Replace the fullscreen QR CSS**
 
-Append this CSS to `static/css/app.css` before the existing `@media (max-width:760px)` block:
+In `static/css/app.css`, remove the existing first-pass fullscreen QR block that starts at `/* ---- fullscreen QR ---- */`, including its nested mobile rules inside `@media (max-width:760px)`. Keep the existing non-QR mobile rules for `.form-grid`, `.preview-card`, and `.pc-qr`.
+
+Insert this CSS before the existing `@media (max-width:760px)` block:
 
 ```css
-/* ---- fullscreen QR ---- */
+/* ---- fullscreen QR presentation ---- */
 body.qr-fullscreen-body{
   min-height:100vh;
-  background:var(--paper);
+  min-height:100svh;
+  overflow:hidden;
+  background:#10251f;
+  color:#fffaf2;
+}
+body.qr-fullscreen-body::before{
+  opacity:.14;
+  mix-blend-mode:screen;
 }
 body.qr-fullscreen-body::after{
   background:
-    radial-gradient(900px 600px at 15% 0%, rgba(189,75,44,0.08), transparent 60%),
-    radial-gradient(800px 700px at 100% 100%, rgba(30,90,78,0.06), transparent 60%);
+    linear-gradient(135deg, rgba(189,75,44,.22) 0%, rgba(189,75,44,0) 38%),
+    linear-gradient(180deg, #10251f 0%, #142c26 58%, #efe9dd 58%, #efe9dd 100%);
 }
 .qr-fullscreen{
   position:relative;
   z-index:2;
-  min-height:100vh;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  padding:96px clamp(18px,5vw,40px) 56px;
+  height:100vh;
+  height:100svh;
+  min-height:100svh;
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr);
+  gap:clamp(12px,2svh,22px);
+  padding:
+    max(16px, env(safe-area-inset-top))
+    max(16px, env(safe-area-inset-right))
+    max(18px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
 }
 .qr-fullscreen__actions{
-  position:fixed;
-  top:24px;
-  left:clamp(18px,5vw,40px);
-  right:clamp(18px,5vw,40px);
-  z-index:4;
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:12px;
-  pointer-events:none;
+  gap:10px;
+  min-width:0;
 }
 .qr-fullscreen__actions .btn{
-  pointer-events:auto;
+  min-height:38px;
+  padding:8px 12px;
+  border-radius:8px;
+  background:rgba(255,250,242,.94);
+  color:#10251f;
+  box-shadow:0 14px 34px -24px rgba(0,0,0,.7);
+  font-size:13px;
+  line-height:1;
+  white-space:nowrap;
 }
-.qr-fullscreen__content{
-  width:min(92vw,760px);
-  display:flex;
-  flex-direction:column;
-  align-items:center;
+.qr-fullscreen__actions .btn--ghost{
+  background:rgba(255,250,242,.08);
+  color:#fffaf2;
+  box-shadow:inset 0 0 0 1px rgba(255,250,242,.28);
+}
+.qr-fullscreen__stage{
+  width:min(100%,720px);
+  min-height:0;
+  margin:0 auto;
+  display:grid;
+  grid-template-rows:auto auto auto minmax(0,1fr);
+  align-content:center;
+  justify-items:center;
+  gap:clamp(10px,2svh,24px);
   text-align:center;
 }
-.qr-fullscreen__content .kicker{
-  margin-bottom:18px;
+.qr-fullscreen__eyebrow{
+  font-family:'Space Mono',monospace;
+  font-size:12px;
+  letter-spacing:0;
+  text-transform:uppercase;
+  color:rgba(255,250,242,.72);
 }
-.qr-fullscreen__content .kicker::before{
-  display:none;
-}
-.qr-fullscreen__content h1{
-  max-width:14ch;
-  font-size:4.5rem;
+.qr-fullscreen__stage h1{
+  max-width:min(92vw,12ch);
+  color:#fffaf2;
+  font-size:clamp(2.4rem,9vw,5.8rem);
+  line-height:.96;
+  letter-spacing:0;
   overflow-wrap:anywhere;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
 }
 .qr-fullscreen__role{
-  margin-top:18px;
+  max-width:min(86vw,50ch);
+  margin:0;
   font-family:'Space Mono',monospace;
-  font-size:13px;
-  letter-spacing:.08em;
+  font-size:clamp(11px,2.4vw,14px);
+  letter-spacing:0;
   text-transform:uppercase;
-  color:var(--accent);
+  color:rgba(255,250,242,.74);
   overflow-wrap:anywhere;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
 }
-.qr-fullscreen__tile{
-  width:min(76vmin,560px);
+.qr-fullscreen__qr-card{
+  width:min(76svmin,560px);
+  max-width:100%;
   aspect-ratio:1;
-  margin-top:34px;
-  padding:clamp(12px,2vw,22px);
+  padding:clamp(12px,2.4svmin,24px);
   background:#fff;
-  border-radius:12px;
-  box-shadow:0 24px 60px -34px var(--shadow), inset 0 0 0 1px var(--line-soft);
+  border-radius:8px;
+  box-shadow:0 26px 70px -36px rgba(0,0,0,.72), inset 0 0 0 1px rgba(16,37,31,.12);
   line-height:0;
 }
-.qr-fullscreen__tile img{
+.qr-fullscreen__qr-card img{
   width:100%;
   height:100%;
   display:block;
@@ -257,306 +232,163 @@ body.qr-fullscreen-body::after{
 }
 ```
 
-Then add this nested block inside the existing `@media (max-width:760px)` block:
+Then add these QR-specific mobile rules inside the existing `@media (max-width:760px)` block, after `.pc-qr{align-self:center;}`:
 
 ```css
   .qr-fullscreen{
-    justify-content:flex-start;
-    padding-top:112px;
+    gap:10px;
+    padding:
+      max(12px, env(safe-area-inset-top))
+      max(12px, env(safe-area-inset-right))
+      max(14px, env(safe-area-inset-bottom))
+      max(12px, env(safe-area-inset-left));
   }
   .qr-fullscreen__actions{
-    position:absolute;
-    top:18px;
-    left:18px;
-    right:18px;
+    gap:8px;
   }
-  .qr-fullscreen__content h1{
-    font-size:2.6rem;
+  .qr-fullscreen__actions .btn{
+    min-height:36px;
+    padding:8px 10px;
+    font-size:12px;
   }
-  .qr-fullscreen__tile{
-    width:min(84vmin,420px);
-    margin-top:26px;
+  .qr-fullscreen__stage{
+    align-content:start;
+    padding-top:clamp(8px,2svh,18px);
+    gap:clamp(8px,1.6svh,14px);
+  }
+  .qr-fullscreen__stage h1{
+    max-width:11ch;
+    font-size:clamp(2rem,11vw,3.3rem);
+  }
+  .qr-fullscreen__qr-card{
+    width:min(84vw,47svh,380px);
+    padding:clamp(10px,3vw,16px);
   }
 ```
 
-- [ ] **Step 7: Run the fullscreen route tests again**
+Add this short-height rule after the `@media (max-width:760px)` block:
+
+```css
+@media (max-height:700px){
+  .qr-fullscreen__eyebrow{
+    display:none;
+  }
+  .qr-fullscreen__stage h1{
+    font-size:clamp(1.8rem,9svh,3.6rem);
+  }
+  .qr-fullscreen__role{
+    font-size:11px;
+  }
+  .qr-fullscreen__qr-card{
+    width:min(78vw,44svh,420px);
+  }
+}
+```
+
+- [ ] **Step 5: Run the focused fullscreen test**
 
 Run:
 
 ```bash
-python manage.py test cards.tests.CardFlowTests.test_qr_fullscreen_page_requires_login cards.tests.CardFlowTests.test_qr_fullscreen_page_renders_owner_card cards.tests.CardFlowTests.test_qr_fullscreen_page_hides_other_users_card -v 2
-```
-
-Expected: all 3 tests PASS.
-
-- [ ] **Step 8: Commit the route and fullscreen page**
-
-Run:
-
-```bash
-git add cards/tests.py cards/views.py cards/urls.py cards/templates/cards/card_qr_fullscreen.html static/css/app.css
-git commit -m "feat: add fullscreen QR page"
-```
-
-Expected: commit succeeds with the new view, route, template, styles, and tests.
-
----
-
-### Task 2: Add Detail Page Entry Point
-
-**Files:**
-- Modify: `cards/tests.py`
-- Modify: `cards/templates/cards/card_detail.html`
-
-**Assigned agent:** coding
-
-- [ ] **Step 1: Write the failing detail-page link test**
-
-Add this method inside `CardFlowTests` in `cards/tests.py`, after `test_qr_fullscreen_page_renders_owner_card`:
-
-```python
-    def test_detail_page_links_to_qr_fullscreen(self):
-        self.client.force_login(self.user)
-        card = BusinessCard.objects.create(
-            owner=self.user,
-            first_name="Ada",
-            last_name="Lovelace",
-        )
-
-        resp = self.client.get(reverse("cards:detail", args=[card.pk]))
-
-        self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, "Fullscreen QR")
-        self.assertContains(resp, reverse("cards:qr_fullscreen", args=[card.pk]))
-        self.assertContains(resp, reverse("cards:vcf", args=[card.pk]))
-        self.assertContains(resp, reverse("cards:qr", args=[card.pk]))
-```
-
-- [ ] **Step 2: Run the detail-page link test to verify it fails**
-
-Run:
-
-```bash
-python manage.py test cards.tests.CardFlowTests.test_detail_page_links_to_qr_fullscreen -v 2
-```
-
-Expected: FAIL because `Fullscreen QR` is not present in `cards/card_detail.html`.
-
-- [ ] **Step 3: Add the fullscreen action to the detail page**
-
-In `cards/templates/cards/card_detail.html`, replace this action block:
-
-```django
-  <div class="btn-row">
-    <a class="btn" href="{% url 'cards:vcf' card.pk %}">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
-      Download .vcf
-    </a>
-    <a class="btn btn--ghost" href="{% url 'cards:qr' card.pk %}" download="{{ card.display_name|default:'contact' }}-qr.png">Download QR (PNG)</a>
-    <span class="hint">Scan with a phone camera to add the contact</span>
-  </div>
-```
-
-with this block:
-
-```django
-  <div class="btn-row">
-    <a class="btn" href="{% url 'cards:vcf' card.pk %}">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
-      Download .vcf
-    </a>
-    <a class="btn btn--ghost" href="{% url 'cards:qr_fullscreen' card.pk %}">Fullscreen QR</a>
-    <a class="btn btn--ghost" href="{% url 'cards:qr' card.pk %}" download="{{ card.display_name|default:'contact' }}-qr.png">Download QR (PNG)</a>
-    <span class="hint">Scan with a phone camera to add the contact</span>
-  </div>
-```
-
-- [ ] **Step 4: Run the detail-page link test again**
-
-Run:
-
-```bash
-python manage.py test cards.tests.CardFlowTests.test_detail_page_links_to_qr_fullscreen -v 2
+python manage.py test cards.tests.CardFlowTests.test_qr_fullscreen_page_renders_owner_card -v 2
 ```
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit the detail entry point**
+- [ ] **Step 6: Run whitespace check for edited frontend files**
 
 Run:
 
 ```bash
-git add cards/tests.py cards/templates/cards/card_detail.html
-git commit -m "feat: link detail page to fullscreen QR"
+git diff --check cards/templates/cards/card_qr_fullscreen.html static/css/app.css cards/tests.py
 ```
 
-Expected: commit succeeds with the detail-page action and test.
+Expected: no output.
+
+- [ ] **Step 7: Commit the presentation display upgrade**
+
+Run:
+
+```bash
+git add cards/tests.py cards/templates/cards/card_qr_fullscreen.html static/css/app.css
+git commit -m "feat: improve fullscreen QR presentation"
+```
+
+Expected: commit succeeds with the test, template, and CSS changes.
 
 ---
 
-### Task 3: Document Fullscreen QR
+### Task 2: Document Mobile Presentation Behavior
 
 **Files:**
 - Modify: `API.md`
-- Modify: `docs/README.md`
-- Create: `docs/features/cards.md`
+- Modify: `docs/features/cards.md`
 - Modify: `docs/CHANGELOG.md`
 
 **Assigned agent:** coding
 
-- [ ] **Step 1: Update the API contract**
+- [ ] **Step 1: Update the API response shape**
 
-Replace the contents of `API.md` with:
-
-````markdown
-# API — Hey
-
-_API surface contract for this project. Both human developers and AI agents should read this before changing endpoints, payloads, auth, or anything a caller depends on. Keep it current as the API evolves._
-
-> Companion to [`ARCHITECTURE.md`](./ARCHITECTURE.md), which covers the broader system map.
-
-## Overview
-
-Hey is a server-rendered Django app for virtual business cards. The app exposes authenticated HTML pages for card management plus download endpoints for card vCards and QR PNGs.
-
-## Authentication
-
-Hey uses Django session authentication. Card routes require a logged-in user unless noted otherwise. Card-specific routes are owner-isolated: authenticated users receive HTTP 404 when they request another user's card.
-
-## Endpoints
-
-### Accounts
-
-| Method | Path | Purpose | Auth |
-|--------|------|---------|------|
-| GET/POST | `/accounts/register/` | Register a new user and log them in. | Anonymous |
-| GET/POST | `/accounts/login/` | Start a user session. | Anonymous |
-| POST | `/accounts/logout/` | End the current user session. | Authenticated |
-
-### Cards
-
-| Method | Path | Purpose | Auth |
-|--------|------|---------|------|
-| GET | `/` | List the current user's cards. | Authenticated |
-| GET/POST | `/cards/new/` | Create a card owned by the current user. | Authenticated |
-| GET | `/cards/<id>/` | Show one owned card. | Authenticated owner |
-| GET/POST | `/cards/<id>/edit/` | Edit one owned card. | Authenticated owner |
-| GET/POST | `/cards/<id>/delete/` | Delete one owned card. | Authenticated owner |
-| GET | `/cards/<id>/qr/fullscreen/` | Show a full-viewport HTML QR presentation page with the card name. | Authenticated owner |
-| GET | `/cards/<id>/qr.png` | Return a PNG QR code containing the card's vCard data. | Authenticated owner |
-| GET | `/cards/<id>/vcard.vcf` | Return the card as a downloadable vCard file. | Authenticated owner |
-
-## Request / Response Shapes
-
-HTML routes return Django-rendered HTML. `/cards/<id>/qr.png` returns `image/png` with `Cache-Control: no-store`. `/cards/<id>/vcard.vcf` returns `text/vcard; charset=utf-8` with an attachment filename derived from the card display name.
-
-## Error Model
-
-Unauthenticated users are redirected to `/accounts/login/` for class-based card pages. Card download helper endpoints return HTTP 404 for unauthenticated requests and for requests to cards the user does not own. Authenticated users receive HTTP 404 for other users' cards.
-
-## Webhooks / Events
-
-Hey does not emit webhooks or outbound events.
-
-## Rate Limits
-
-No application-level rate limits are configured.
-
-## Versioning
-
-The app does not expose a versioned public API. Endpoint changes are tracked in this file and in `docs/CHANGELOG.md`.
-
-## Examples
-
-```http
-GET /cards/12/qr/fullscreen/ HTTP/1.1
-Host: hey.leorey.es
-Cookie: sessionid=...
-```
-
-Successful response: HTTP 200 with an HTML page containing the card display name and an `<img>` that references `/cards/12/qr.png`.
-````
-
-- [ ] **Step 2: Create the card feature documentation**
-
-Create `docs/features/cards.md` with:
+In `API.md`, replace this sentence:
 
 ```markdown
-# Cards
-
-Hey cards store a person's contact details and can be viewed, downloaded, and shared as QR codes.
-
-## Card List
-
-Authenticated users land on the card list at `/`. The list only shows cards owned by the current user.
-
-## Card Detail
-
-Each card detail page at `/cards/<id>/` shows the display name, role line, contact fields, QR preview, vCard data, and card actions.
-
-## QR Codes
-
-The QR PNG endpoint at `/cards/<id>/qr.png` encodes the card's vCard data and is only available to the card owner. The detail page uses this endpoint for its QR preview and PNG download.
-
-The fullscreen QR page at `/cards/<id>/qr/fullscreen/` shows the card name and a large QR code in a focused layout. It is intended for presenting a card from a phone, tablet, or display while keeping the normal detail page available for editing and downloads.
-
-## vCard Downloads
-
-The vCard endpoint at `/cards/<id>/vcard.vcf` returns a downloadable `.vcf` file generated from the same card fields used by the QR code.
-
-## Access Control
-
-All card pages and download endpoints are scoped to the logged-in owner. Users cannot view, edit, delete, download, or present another user's card.
+HTML routes return Django-rendered HTML. `/cards/<id>/qr/fullscreen/` returns an HTML page containing the card display name and an image that references `/cards/<id>/qr.png`. `/cards/<id>/qr.png` returns `image/png` with `Cache-Control: no-store`. `/cards/<id>/vcard.vcf` returns `text/vcard; charset=utf-8` with an attachment filename derived from the card display name.
 ```
 
-- [ ] **Step 3: Update the docs index**
-
-In `docs/README.md`, replace the documentation map with:
+with:
 
 ```markdown
-## Documentation map
-
-- `docs/architecture.md` — high-level system shape and data flow.
-- `docs/features/cards.md` — card viewing, QR, fullscreen QR, and download behavior.
-- `docs/features/deployment.md` — localhost Docker Compose deployment.
-- `docs/CHANGELOG.md` — notable user-visible changes.
+HTML routes return Django-rendered HTML. `/cards/<id>/qr/fullscreen/` returns a mobile-first presentation HTML page containing the card display name and an image that references `/cards/<id>/qr.png`. `/cards/<id>/qr.png` returns `image/png` with `Cache-Control: no-store`. `/cards/<id>/vcard.vcf` returns `text/vcard; charset=utf-8` with an attachment filename derived from the card display name.
 ```
 
-- [ ] **Step 4: Update the changelog**
+- [ ] **Step 2: Update card feature docs**
+
+In `docs/features/cards.md`, replace this paragraph:
+
+```markdown
+The fullscreen QR page at `/cards/<id>/qr/fullscreen/` shows the card name and a large QR code in a focused layout. It is linked from the card detail page and is intended for presenting a card from a phone, tablet, or display while keeping the normal detail page available for editing and downloads.
+```
+
+with:
+
+```markdown
+The fullscreen QR page at `/cards/<id>/qr/fullscreen/` shows the card name and a large QR code in a mobile-first presentation layout. It is linked from the card detail page and is intended for presenting a card from a phone, tablet, or display while keeping the normal detail page available for editing and downloads.
+```
+
+- [ ] **Step 3: Add a changelog entry**
 
 Add this entry at the top of `docs/CHANGELOG.md`, immediately after `# Changelog`:
 
 ```markdown
-## 2026-06-05 — Add fullscreen QR page
-- Add an owner-protected fullscreen QR page for presenting a card name and large QR code.
-- Add a `Fullscreen QR` action from the card detail page.
+## 2026-06-05 — Improve fullscreen QR presentation
+- Improve the fullscreen QR page with mobile-safe viewport sizing and a polished presentation-display layout.
 
 ```
 
-- [ ] **Step 5: Review the docs diff**
+- [ ] **Step 4: Review the documentation diff**
 
 Run:
 
 ```bash
-git diff -- API.md docs/README.md docs/features/cards.md docs/CHANGELOG.md
+git diff -- API.md docs/features/cards.md docs/CHANGELOG.md
 ```
 
-Expected: diff shows only the API contract, docs index, card feature doc, and changelog updates described in this task.
+Expected: diff shows only the API wording, card feature wording, and changelog entry described in this task.
 
-- [ ] **Step 6: Commit the docs**
+- [ ] **Step 5: Commit the documentation**
 
 Run:
 
 ```bash
-git add API.md docs/README.md docs/features/cards.md docs/CHANGELOG.md
-git commit -m "docs: document fullscreen QR page"
+git add API.md docs/features/cards.md docs/CHANGELOG.md
+git commit -m "docs: update fullscreen QR presentation notes"
 ```
 
-Expected: commit succeeds with the API and human-facing documentation updates.
+Expected: commit succeeds with the documentation update.
 
 ---
 
-### Task 4: Verify Fullscreen QR End To End
+### Task 3: Verify Fullscreen QR Fits Mobile
 
 **Files:**
 - No planned file edits.
@@ -604,7 +436,26 @@ Expected output:
 /cards/1/qr/fullscreen/
 ```
 
-- [ ] **Step 4: Inspect the final diff**
+- [ ] **Step 4: Perform mobile visual QA**
+
+Start the local Django server:
+
+```bash
+python manage.py runserver 127.0.0.1:8000
+```
+
+In the in-app Browser or another browser, load a card's fullscreen QR page at a mobile viewport around `390x844`.
+
+Expected visual result:
+
+```text
+- The page fits the mobile viewport without vertical scrolling for normal names.
+- The card name is visible and does not overlap the controls or QR code.
+- The QR code remains square, centered, and large enough to scan.
+- Back and Download controls remain visible but visually secondary.
+```
+
+- [ ] **Step 5: Inspect the final diff**
 
 Run:
 
@@ -615,7 +466,7 @@ git diff --check
 
 Expected: `git diff --check` prints no whitespace errors. `git status --short` is empty if the previous task commits were created successfully.
 
-- [ ] **Step 5: Report verification**
+- [ ] **Step 6: Report verification**
 
 Post a concise summary with:
 
@@ -624,5 +475,6 @@ Verification complete:
 - cards tests: pass
 - full Django tests: pass
 - route resolution: /cards/1/qr/fullscreen/
+- mobile visual QA: pass
 - whitespace check: pass
 ```

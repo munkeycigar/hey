@@ -2,12 +2,15 @@
 
 ## Overview
 
-Add a dedicated full-viewport QR presentation page for an authenticated user's business card. The page should show the card name and a large QR code so the user can present it on a screen or phone without the normal detail-page layout competing for attention.
+Add a dedicated full-viewport QR presentation page for an authenticated user's business card. The page should fit a mobile screen cleanly, show the card name and a large QR code, and look intentional when the user presents it from a phone, tablet, or external display.
 
 ## Requirements
 
 - Provide an owner-protected, trailing-slash Django route for fullscreen QR presentation.
 - Render the selected card's display name prominently with a large QR image below it.
+- Use a presentation-display layout: no normal site chrome, polished visual treatment, mobile-safe viewport sizing, and compact controls that do not compete with the QR code.
+- Fit common mobile screens without awkward vertical overflow by using safe viewport units and safe-area padding.
+- Make long card names and role lines wrap cleanly without overlapping the QR code or controls.
 - Reuse the existing QR PNG endpoint so QR generation behavior stays centralized.
 - Add an obvious entry point from the existing card detail page.
 - Keep the normal card detail, QR PNG download, and vCard download behavior unchanged.
@@ -26,6 +29,8 @@ The feature adds one HTML view in the existing `cards` app, using the same owner
 
 The route should be a normal Django route with a trailing slash, for example `cards/<int:pk>/qr/fullscreen/`, named `cards:qr_fullscreen`. Authentication and ownership should match the existing detail page: unauthenticated users are redirected to login through `LoginRequiredMixin`, and authenticated non-owners receive a 404.
 
+The fullscreen template should be standalone rather than extending the normal app shell. Its CSS should prioritize mobile presentation: `min-height:100svh`, safe-area-aware padding, a constrained content stack, high-contrast QR framing, and responsive sizing that keeps the name, role line, QR tile, and controls visible on narrow screens. Desktop should use the same page as a centered presentation display, with a larger QR tile but no decorative layout that distracts from scanning.
+
 ## Features
 
 ### Feature 1: Fullscreen QR Presentation
@@ -35,7 +40,9 @@ The route should be a normal Django route with a trailing slash, for example `ca
   - [ ] Visiting the fullscreen URL while logged in as the card owner returns HTTP 200.
   - [ ] The page title and visible heading include `card.display_name|default:card.full_label`.
   - [ ] The page contains a large QR image using the existing `cards:qr` URL.
-  - [ ] The layout fills the viewport, centers the content, and remains usable on mobile and desktop.
+  - [ ] The layout uses a presentation-display treatment that looks polished on phone, tablet, and desktop displays.
+  - [ ] The layout uses mobile-safe viewport sizing and safe-area padding so the page fits common mobile screens.
+  - [ ] Long card names and role lines wrap cleanly without overlapping the QR code or action controls.
   - [ ] The page includes a restrained back link to the card detail page and a download link for the QR PNG.
 
 ### Feature 2: Detail Page Entry Point
@@ -76,11 +83,11 @@ The route should be a normal Django route with a trailing slash, for example `ca
 - Create `CardQRFullscreenView` in `cards/views.py` using `OwnedCardsMixin` and `DetailView`.
 - Add `path("cards/<int:pk>/qr/fullscreen/", views.CardQRFullscreenView.as_view(), name="qr_fullscreen")` in `cards/urls.py`.
 - Create `cards/templates/cards/card_qr_fullscreen.html`.
-- Add CSS classes for the fullscreen layout in `static/css/app.css`.
-- Add tests to `cards/tests.py` for authenticated owner access, login redirect, owner isolation, and QR image URL rendering.
+- Add CSS classes for the presentation-display fullscreen layout in `static/css/app.css`, including `100svh`, safe-area padding, responsive QR sizing, and long-text wrapping.
+- Add tests to `cards/tests.py` for authenticated owner access, login redirect, owner isolation, QR image URL rendering, and the presentation layout hook.
 - Create `docs/features/cards.md` to describe card viewing, QR, fullscreen QR, and download behavior.
 - Update `API.md` and `docs/CHANGELOG.md`.
 
 ## Questions / Clarifications Needed
 
-- None. The approved interaction is a dedicated full-viewport page.
+- None. The approved interaction is a dedicated full-viewport page using the presentation-display direction.
