@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026-06-06 — Document fullscreen QR endpoint
+- Document the fullscreen QR route, QR PNG relationship, and card owner access-control behavior.
+
 ## 2026-06-06 — Improve fullscreen QR presentation
 - Improve the fullscreen QR page with mobile-safe viewport sizing and a polished presentation-display layout.
 

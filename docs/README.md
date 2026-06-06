@@ -22,6 +22,6 @@ These docs are for maintainers who run, deploy, and extend the project.
 ## Documentation map
 
 - `docs/architecture.md` — high-level system shape and data flow.
-- `docs/features/cards.md` — card viewing, fullscreen QR, QR PNG, and vCard download behavior.
+- `docs/features/cards.md` — card viewing, QR PNG, fullscreen QR presentation, vCard downloads, and card access control.
 - `docs/features/deployment.md` — localhost Docker Compose deployment.
 - `docs/CHANGELOG.md` — notable user-visible changes.

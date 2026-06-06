@@ -198,3 +198,34 @@ Refine the fullscreen QR page into a mobile-fit presentation display with a prom
 - Changing account authentication behavior or owner isolation rules.
 - Adding new endpoints or changing request/response payloads.
 - Building unrelated card detail, edit, or list features.
+
+---
+
+# Plan — Document Fullscreen QR
+
+## Goal
+Document the fullscreen QR endpoint and card QR presentation behavior for API consumers and project maintainers.
+
+## Checklist
+- [x] Confirm the implemented fullscreen QR route, response type, and access control from source.
+- [x] Update `API.md` with explicit fullscreen QR route, auth, response, and error details.
+- [x] Update `docs/README.md` so the documentation map points maintainers to card QR and access-control docs.
+- [x] Update `docs/features/cards.md` with card QR, fullscreen QR, and access-control behavior.
+- [x] Add a dated `docs/CHANGELOG.md` entry for the documentation update.
+- [x] Run documentation verification and whitespace checks.
+- [x] Append handoff notes and attempt to commit the documentation changes.
+
+## Verification Notes
+- `rg -n "/cards/<id>/qr/fullscreen/|Fullscreen QR Presentation|QR PNG|Access Control|owner|unauthenticated|docs/features/cards.md" API.md docs/README.md docs/features/cards.md docs/CHANGELOG.md` confirms the API and human docs cover the route, QR behavior, and access control.
+- `git diff --check API.md docs/README.md docs/features/cards.md docs/CHANGELOG.md PLAN.md` passes with no whitespace errors.
+- `tail -n 28 HANDOFF.md` confirms the task handoff section is present.
+- `git add API.md docs/README.md docs/features/cards.md docs/CHANGELOG.md PLAN.md HANDOFF.md && git commit -m "docs: document fullscreen QR endpoint"` is blocked in this sandbox because Git cannot create `.git/index.lock`: `Operation not permitted`.
+
+## Integration Check
+- This task documents existing routes only; it creates or updates no records.
+- The feature guide now connects the card detail page, fullscreen QR page, QR PNG endpoint, and owner access rules.
+
+## Out of Scope
+- Changing QR PNG generation, vCard serialization, templates, styles, or Django views.
+- Adding, removing, or modifying endpoints or auth behavior.
+- Performing mobile browser QA for the fullscreen QR page.

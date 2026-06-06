@@ -37,7 +37,13 @@ Hey uses Django session authentication. Card routes require a logged-in user unl
 
 ## Request / Response Shapes
 
-HTML routes return Django-rendered HTML. `/cards/<id>/qr/fullscreen/` returns a mobile-first presentation HTML page containing the card display name and an image that references `/cards/<id>/qr.png`. `/cards/<id>/qr.png` returns `image/png` with `Cache-Control: no-store`. `/cards/<id>/vcard.vcf` returns `text/vcard; charset=utf-8` with an attachment filename derived from the card display name.
+HTML routes return Django-rendered HTML. `/cards/<id>/qr/fullscreen/` returns a mobile-first presentation HTML page containing the card display name, optional role line, secondary Back and Download actions, and an image that references `/cards/<id>/qr.png`. `/cards/<id>/qr.png` returns `image/png` with `Cache-Control: no-store`. `/cards/<id>/vcard.vcf` returns `text/vcard; charset=utf-8` with an attachment filename derived from the card display name.
+
+### Fullscreen QR Presentation
+
+`GET /cards/<id>/qr/fullscreen/` is an authenticated owner-only HTML route. A successful response is HTTP 200 with `text/html` content that presents the card name and QR image for scanning from a phone, tablet, or display. The page does not return JSON and does not embed vCard data directly; scanners use the linked `/cards/<id>/qr.png` image generated from the card's vCard data.
+
+The fullscreen page follows the class-based card route auth behavior: unauthenticated users are redirected to `/accounts/login/` with the requested path preserved for return after login. Authenticated users receive HTTP 404 when the card does not exist or belongs to another user.
 
 ## Error Model
 
